@@ -1,0 +1,1 @@
+{"feedVersion":"S1000116","feedStartDate":"20260618","feedEndDate":"20260909","publisher":"Santa Cruz METRO","builtAt":"2026-07-26T21:35:01.716Z","source":"https://developer.scmetro.org/gtfs.zip","keptRoutes":["11","18","18B","19","19B","35","35B","35X"],"counts":{"routes":8,"trips":734,"stops":210,"stopTimes":22188,"shapes":13}}
