@@ -83,8 +83,10 @@ function toGeminiSchema(schema: unknown): unknown {
   return out;
 }
 
-export function buildFunctionDeclarations() {
-  return TOOL_NAMES.map((name: ToolName) => ({
+export function buildFunctionDeclarations(
+  names: readonly ToolName[] = TOOL_NAMES,
+) {
+  return names.map((name: ToolName) => ({
     name,
     description: TOOL_DESCRIPTIONS[name],
     parameters: toGeminiSchema(toolJsonSchema(name)),
@@ -98,6 +100,8 @@ export interface GenerateArgs {
   model: string;
   systemPrompt: string;
   contents: GeminiContent[];
+  /** Only send tools relevant to this journey; declarations count as input tokens. */
+  toolNames?: readonly ToolName[];
   signal?: AbortSignal;
 }
 
@@ -122,7 +126,13 @@ export async function generateContent(
     // systemInstruction field, so the system prompt is prepended as the first
     // user turn. This is why `contents` always begins with it.
     contents: args.contents,
-    tools: [{ functionDeclarations: buildFunctionDeclarations() }],
+    tools: [
+      {
+        functionDeclarations: buildFunctionDeclarations(
+          args.toolNames ?? TOOL_NAMES,
+        ),
+      },
+    ],
     generationConfig: { temperature: 0.3, maxOutputTokens: 1400 },
   };
 

@@ -14,7 +14,11 @@ import {
   buildTraceEntry,
 } from "@/lib/agent/trace";
 import { buildSystemPrompt } from "@/lib/agent/prompt";
-import { runAgent } from "@/lib/agent/orchestrator";
+import {
+  compactToolResultForModel,
+  gemmaToolsForDirection,
+  runAgent,
+} from "@/lib/agent/orchestrator";
 import { DEFAULT_PREFERENCES } from "@/lib/engine/types";
 import { getFixturePlaces } from "@/lib/places/provider";
 import { RIVERFRONT } from "@/lib/domain";
@@ -96,6 +100,15 @@ describe("tool schema surface", () => {
       expect(json).not.toContain("additionalProperties");
       expect(json).not.toContain("exclusiveMinimum");
     }
+  });
+
+  it("only advertises journey-relevant tools to conserve input tokens", () => {
+    const campus = gemmaToolsForDirection("to-campus");
+    const home = gemmaToolsForDirection("to-home");
+    expect(buildFunctionDeclarations(campus)).toHaveLength(3);
+    expect(buildFunctionDeclarations(home)).toHaveLength(2);
+    expect(campus).toContain("compare_ucsc_options");
+    expect(home).toContain("recommend_next_action");
   });
 
   it("the campus comparison tool cannot be asked about Route 35", () => {
@@ -444,6 +457,15 @@ describe("end-to-end happy path", () => {
     const top = rec.waitPlaces.find((p) => p.feasible)!;
     // One leave-by time on the screen, not two that differ by a minute.
     expect(top.leaveByIso).toBe(rec.leaveByIso);
+
+    const compact = compactToolResultForModel(
+      "recommend_next_action",
+      result.recommendation,
+    );
+    const json = JSON.stringify(compact);
+    expect(json.length).toBeLessThan(2500);
+    expect(json).not.toMatch(/T\d{2}:\d{2}:\d{2}/);
+    expect(compact.leaveBy).toBe("8:49 PM");
   });
 
   it("never asserts a cancellation anywhere in the rider-facing output", async () => {

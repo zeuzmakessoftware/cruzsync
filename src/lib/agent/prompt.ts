@@ -95,7 +95,11 @@ Be concise, warm and practical — this is a tired student, not a report reader.
 Cover: which leg they are on, what to do next, whether a place visit is safely
 possible, when they must leave, when the advice expires, and the backup plan.
 Prefer short sentences. Do not use headings or bullet lists longer than three
-items. Never output your private reasoning; give the conclusion and the evidence.`;
+items. Use only the display-ready local times returned by tools; never expose
+raw ISO timestamps or convert times yourself. Start directly with the rider's
+answer. Never include planning chatter such as "I have enough information",
+"I will synthesize", or a recap of your process. Never output your private
+reasoning; give the conclusion and the evidence.`;
 }
 
 export const REFUSAL_SAFE_FALLBACK =

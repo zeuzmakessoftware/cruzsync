@@ -69,6 +69,10 @@ validation cannot drift. Results are validated too — a tool returning the wron
 loudly rather than corrupting a journey deep inside the UI. Invalid arguments come back to the
 model as structured errors so it can correct itself.
 
+To fit the free-tier token budget, each journey exposes only its relevant tool subset. Full
+validated results remain in CruzSync for the UI and audit trail; Gemma receives compact,
+display-ready projections with local times instead of duplicated raw venue and evidence data.
+
 Gemma's job is genuinely agentic: choose which evidence to gather, notice when the destination
 is missing and ask, then explain. Its job is explicitly _not_ arithmetic. The system prompt
 forbids adding times, computing headways or deriving leave-by times in free text. Every number

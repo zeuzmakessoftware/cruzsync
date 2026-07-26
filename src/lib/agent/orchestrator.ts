@@ -21,11 +21,29 @@ import { DEFAULT_PREFERENCES, type RiderPreferences } from "@/lib/engine/types";
 import type { RealtimeSnapshot } from "@/lib/rt/types";
 import { buildSystemPrompt } from "./prompt";
 import { executeTool, type ToolContext } from "./tools/registry";
+import type { ToolName } from "./tools/schemas";
 import { buildTraceEntry } from "./trace";
 import { generateContent, type GeminiContent } from "./providers/google";
 import type { AgentResult, TraceEntry } from "./types";
 
 const MAX_TOOL_ROUNDS = 8;
+
+const CAMPUS_GEMMA_TOOLS = [
+  "build_multileg_trip",
+  "compare_ucsc_options",
+  "recommend_next_action",
+] as const satisfies readonly ToolName[];
+
+const HOME_GEMMA_TOOLS = [
+  "get_service_alerts",
+  "recommend_next_action",
+] as const satisfies readonly ToolName[];
+
+export function gemmaToolsForDirection(
+  direction: RunAgentInput["direction"],
+): readonly ToolName[] {
+  return direction === "to-campus" ? CAMPUS_GEMMA_TOOLS : HOME_GEMMA_TOOLS;
+}
 
 export interface RunAgentInput {
   message: string;
@@ -248,6 +266,133 @@ function composeDeterministicMessage(
 /* Gemma path                                                           */
 /* ------------------------------------------------------------------ */
 
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function localTime(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? formatClock(ms) : null;
+}
+
+function compactProvenance(value: unknown) {
+  const p = record(value);
+  const freshness = record(p.freshness);
+  return {
+    source: p.source ?? null,
+    origin: p.origin ?? null,
+    ageSeconds: freshness.ageSeconds ?? null,
+    freshness: freshness.label ?? null,
+  };
+}
+
+/**
+ * Tool results kept by CruzSync remain complete for the UI and audit trace.
+ * Gemma receives a compact, display-ready projection so repeated tool rounds do
+ * not burn the free-tier input-token budget on duplicate venue/evidence data.
+ */
+export function compactToolResultForModel(
+  tool: string,
+  result: unknown,
+): Record<string, unknown> {
+  const r = record(result);
+  const provenance = compactProvenance(r.provenance);
+
+  if (tool === "build_multileg_trip") {
+    const legs = Array.isArray(r.legs) ? r.legs : [];
+    return {
+      provenance,
+      legs: legs.map((value) => {
+        const leg = record(value);
+        return {
+          kind: leg.kind,
+          routeId: leg.routeId ?? null,
+          label: leg.label,
+          from: leg.fromStopName,
+          to: leg.toStopName,
+          departs: localTime(leg.departureIso),
+          arrives: localTime(leg.arrivalIso),
+        };
+      }),
+      transferMarginMinutes:
+        typeof r.downtownTransferMarginSec === "number"
+          ? Math.round(r.downtownTransferMarginSec / 60)
+          : null,
+      blockedReasons: r.blockedReasons ?? [],
+    };
+  }
+
+  if (tool === "compare_ucsc_options") {
+    const options = Array.isArray(r.options) ? r.options : [];
+    return {
+      provenance,
+      destinationName: r.destinationName,
+      bestRouteId: r.bestRouteId,
+      undecidedReason: r.undecidedReason,
+      options: options.map((value) => {
+        const option = record(value);
+        const evidence = record(option.evidence);
+        const arrivalRange = Array.isArray(option.arrivalRange)
+          ? option.arrivalRange
+          : [];
+        return {
+          routeId: option.routeId,
+          feasible: option.feasible,
+          departs: localTime(evidence.predictedDepartureIso),
+          arrivalRange: arrivalRange.map(localTime),
+          transferSlackMinutes:
+            typeof option.transferMarginSec === "number"
+              ? Math.round(option.transferMarginSec / 60)
+              : null,
+          evidence: {
+            label: evidence.label,
+            vehicleVisible: evidence.vehicleVisible,
+            vehicleAgeSeconds: evidence.vehicleAgeSeconds,
+            occupancyStatus: evidence.occupancyStatus,
+          },
+          blockedReasons: option.blockedReasons ?? [],
+        };
+      }),
+    };
+  }
+
+  if (tool === "recommend_next_action") {
+    const waitPlaces = Array.isArray(r.waitPlaces) ? r.waitPlaces : [];
+    return {
+      provenance,
+      action: r.action,
+      headline: r.headline,
+      subhead: r.subhead,
+      boardingStop: r.boardingStopLabel,
+      departs: localTime(r.departureIso),
+      leaveBy: localTime(r.leaveByIso),
+      reevaluateAt: localTime(r.reevaluateAtIso),
+      backupPlan: r.backupPlan,
+      blockedReasons: r.blockedReasons ?? [],
+      feasibleWaitPlaces: waitPlaces
+        .filter((value) => record(value).feasible === true)
+        .slice(0, 4)
+        .map((value) => {
+          const place = record(value);
+          return {
+            name: place.name,
+            category: place.categoryLabel,
+            address: place.address,
+            summary: place.summary,
+            leaveBy: localTime(place.leaveByIso),
+            amenities: place.amenities,
+          };
+        }),
+      fallbackAdvice: r.fallbackAdvice,
+    };
+  }
+
+  return { ...r, provenance };
+}
+
 async function runGemma(
   input: RunAgentInput,
   ctx: ToolContext,
@@ -297,6 +442,7 @@ async function runGemma(
   ];
 
   let finalText = "";
+  const toolNames = gemmaToolsForDirection(input.direction);
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const res = await generateContent({
@@ -304,6 +450,7 @@ async function runGemma(
       model,
       systemPrompt: "",
       contents,
+      toolNames,
     });
     const calls = res.parts.filter((p) => p.functionCall);
     const text = res.parts
@@ -345,7 +492,7 @@ async function runGemma(
           // A validation failure is handed back as structured data so the model
           // can correct its arguments rather than being left to guess.
           response: outcome.ok
-            ? (outcome.result as Record<string, unknown>)
+            ? compactToolResultForModel(fc.name, outcome.result)
             : { error: outcome.error ?? "tool failed" },
         },
       });
