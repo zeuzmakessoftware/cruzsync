@@ -6,21 +6,42 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "gtfs:build": "tsx scripts/build-gtfs.ts",
+    "places:verify": "tsx scripts/verify-places.ts",
+    "writeup:wordcount": "tsx scripts/check-writeup.ts",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run writeup:wordcount && npm run build",
+    "trace:generate": "tsx scripts/gen-trace.ts"
   },
   "dependencies": {
+    "gtfs-realtime-bindings": "^2.1.0",
+    "leaflet": "^1.9.4",
     "next": "16.2.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-leaflet": "^5.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/adm-zip": "^0.5.8",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.10",
+    "adm-zip": "^0.6.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.1",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
