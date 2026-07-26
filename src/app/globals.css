@@ -1,26 +1,203 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
+/**
+ * CruzSync visual language.
+ *
+ * Pacific blue for the trunk route (35), redwood green and warm sunrise for the
+ * campus routes and accents. Colour is never the only carrier of meaning: every
+ * status also has a text label or glyph, so the UI stays readable for colour
+ * vision differences and in greyscale.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --pacific-950: #04212f;
+  --pacific-800: #0a3b52;
+  --pacific-700: #0f5c8c;
+  --pacific-500: #2288bd;
+  --pacific-300: #7cc4e4;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --redwood-700: #24503a;
+  --redwood-600: #2f6f4f;
+  --redwood-400: #5aa37b;
+
+  --sunrise-600: #a8460f;
+  --sunrise-500: #c2541c;
+  --sunrise-300: #e9a463;
+  --sunrise-100: #fbe8d2;
+
+  --sand-50: #fdfaf5;
+  --sand-100: #f6efe4;
+  --sand-200: #e6d9c4;
+
+  --ink-900: #10201d;
+  --ink-500: #556a66;
+
+  --danger-700: #8f2626;
+  --danger-100: #fbe6e4;
+
+  --bg: var(--sand-50);
+  --surface: #ffffff;
+  --surface-2: var(--sand-100);
+  --border: var(--sand-200);
+  --text: var(--ink-900);
+  --text-muted: var(--ink-500);
+  --accent: var(--pacific-700);
+  --accent-contrast: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: var(--pacific-950);
+    --surface: #072a3b;
+    --surface-2: #0a3448;
+    --border: #17506b;
+    --text: #eef6fa;
+    --text-muted: #a6c6d5;
+    --accent: var(--pacific-300);
+    --accent-contrast: #04212f;
+    /* Brighter on dark so the focus ring keeps its contrast ratio. */
+    --sunrise-500: #f0a55c;
   }
 }
 
+/* The in-app theme toggle stamps data-theme on the root and must win both ways. */
+:root[data-theme='dark'] {
+  --bg: var(--pacific-950);
+  --surface: #072a3b;
+  --surface-2: #0a3448;
+  --border: #17506b;
+  --text: #eef6fa;
+  --text-muted: #a6c6d5;
+  --accent: var(--pacific-300);
+  --accent-contrast: #04212f;
+}
+
+:root[data-theme='light'] {
+  --bg: var(--sand-50);
+  --surface: #ffffff;
+  --surface-2: var(--sand-100);
+  --border: var(--sand-200);
+  --text: var(--ink-900);
+  --text-muted: var(--ink-500);
+  --accent: var(--pacific-700);
+  --accent-contrast: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* Tabular numerals for anything time-shaped, so countdowns do not jitter. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--sunrise-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--accent);
+}
+.skip-link:focus {
+  left: 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+@keyframes cs-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.pulse {
+  animation: cs-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes cs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: cs-rise 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Wide content scrolls inside its own box; the page itself never scrolls sideways. */
+.scroll-x {
+  overflow-x: auto;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: var(--surface-2);
+  font: inherit;
+  z-index: 0;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
 }
