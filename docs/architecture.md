@@ -4,7 +4,7 @@
 
 > **Code computes. The model explains.**
 
-Gemma decides *which* questions to ask and turns the answers into something a tired student can
+Gemma decides _which_ questions to ask and turns the answers into something a tired student can
 act on. It never performs the arithmetic. Every time, margin, headway and countdown on screen
 comes from a pure, versioned, unit-tested engine.
 
@@ -117,13 +117,13 @@ not change.
 
 ## Responsibility boundaries
 
-| Layer | Owns | Must never |
-|---|---|---|
-| **Ingestion** `gtfs/`, `rt/` | Fetching, protobuf decoding, normalising, freshness | Interpret data, or let protobuf/keys reach the browser |
-| **Engine** `engine/` | All arithmetic: evidence, headway, margins, ranges, buffers | Perform I/O, or depend on a model |
-| **Places** `places/` | Discovery, hours parsing, feasibility, ranking | Infer an amenity from a category, or treat unknown hours as open |
-| **Agent** `agent/` | Tool selection, argument construction, prose, citation | Compute a number, assert an unsupported fact, expose reasoning |
-| **UI** `components/` | Presentation, interaction, honest labelling | Recompute anything, or render a value without its provenance |
+| Layer                        | Owns                                                        | Must never                                                       |
+| ---------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| **Ingestion** `gtfs/`, `rt/` | Fetching, protobuf decoding, normalising, freshness         | Interpret data, or let protobuf/keys reach the browser           |
+| **Engine** `engine/`         | All arithmetic: evidence, headway, margins, ranges, buffers | Perform I/O, or depend on a model                                |
+| **Places** `places/`         | Discovery, hours parsing, feasibility, ranking              | Infer an amenity from a category, or treat unknown hours as open |
+| **Agent** `agent/`           | Tool selection, argument construction, prose, citation      | Compute a number, assert an unsupported fact, expose reasoning   |
+| **UI** `components/`         | Presentation, interaction, honest labelling                 | Recompute anything, or render a value without its provenance     |
 
 ## Key data decisions
 
@@ -163,9 +163,9 @@ always be tied back to the exact formula that produced it.
 
 132 tests across four files, all runnable offline:
 
-| File | Covers |
-|---|---|
-| `tests/gtfs.test.ts` | Feed integrity, service days, past-midnight times, and the real network geometry — these assertions are pinned to independently verified facts so a future feed change fails loudly rather than silently misleading riders |
-| `tests/engine.test.ts` | Evidence scoring, alerts, computed headway, the three-way comparison, transfer margins, arrival ranges, safe-wait maths, buffer growth |
-| `tests/places.test.ts` | Hours parsing (including refusal to guess), unknown-unless-sourced amenities, closing-before-leave-by, filters, sponsorship neutrality |
-| `tests/agent.test.ts` | Tool schema surface, argument and result validation, trace redaction, prompt guardrails, config honesty, and end-to-end happy paths |
+| File                   | Covers                                                                                                                                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/gtfs.test.ts`   | Feed integrity, service days, past-midnight times, and the real network geometry — these assertions are pinned to independently verified facts so a future feed change fails loudly rather than silently misleading riders |
+| `tests/engine.test.ts` | Evidence scoring, alerts, computed headway, the three-way comparison, transfer margins, arrival ranges, safe-wait maths, buffer growth                                                                                     |
+| `tests/places.test.ts` | Hours parsing (including refusal to guess), unknown-unless-sourced amenities, closing-before-leave-by, filters, sponsorship neutrality                                                                                     |
+| `tests/agent.test.ts`  | Tool schema surface, argument and result validation, trace redaction, prompt guardrails, config honesty, and end-to-end happy paths                                                                                        |

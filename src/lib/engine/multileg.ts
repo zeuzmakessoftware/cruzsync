@@ -14,11 +14,16 @@ import {
   TRUNK_ROUTE_ID,
   findCampusDestination,
   type CampusRouteId,
-} from '@/lib/domain';
-import { getScheduledDepartures, getStop, getStopTimesForTrip, getTripArrivalAtStop } from '@/lib/gtfs/feed';
-import { serviceDateTimeToEpochMs } from '@/lib/gtfs/time';
-import type { RealtimeSnapshot } from '@/lib/rt/types';
-import { analyzeRouteEvidence } from './evidence';
+} from "@/lib/domain";
+import {
+  getScheduledDepartures,
+  getStop,
+  getStopTimesForTrip,
+  getTripArrivalAtStop,
+} from "@/lib/gtfs/feed";
+import { serviceDateTimeToEpochMs } from "@/lib/gtfs/time";
+import type { RealtimeSnapshot } from "@/lib/rt/types";
+import { analyzeRouteEvidence } from "./evidence";
 import type {
   JourneyLeg,
   MultilegTrip,
@@ -26,8 +31,8 @@ import type {
   RouteEvidence,
   UcscComparison,
   UcscOption,
-} from './types';
-import { DEFAULT_PREFERENCES } from './types';
+} from "./types";
+import { DEFAULT_PREFERENCES } from "./types";
 
 const stopName = (id: string) => getStop(id)?.stop_name ?? id;
 
@@ -61,7 +66,9 @@ export interface Route35Arrival {
  * Returns undefined when no such trip exists in the window -- which is itself a
  * legitimate answer we surface rather than paper over.
  */
-export function resolveRoute35Arrival(input: Route35ArrivalInput): Route35Arrival | undefined {
+export function resolveRoute35Arrival(
+  input: Route35ArrivalInput,
+): Route35Arrival | undefined {
   const { snapshot, nowMs } = input;
   const originStopId = input.originStopId;
 
@@ -132,10 +139,19 @@ function buildFallbackPool(args: {
       windowMinutes: args.windowMinutes,
     });
     for (const d of deps) {
-      if (d.departureEpochMs < args.earliestAtArea1Ms + args.requiredBufferSec * 1000) continue;
+      if (
+        d.departureEpochMs <
+        args.earliestAtArea1Ms + args.requiredBufferSec * 1000
+      )
+        continue;
       const arrival = getTripArrivalAtStop(d.tripId, destStopId, d.serviceDate);
       if (arrival === undefined) continue;
-      pool.push({ routeId, tripId: d.tripId, departureMs: d.departureEpochMs, arrivalMs: arrival });
+      pool.push({
+        routeId,
+        tripId: d.tripId,
+        departureMs: d.departureEpochMs,
+        arrivalMs: arrival,
+      });
     }
   }
   return pool.sort((a, b) => a.departureMs - b.departureMs);
@@ -200,13 +216,19 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
 
   const walkSec = interAreaWalkSeconds(prefs);
   const earliestAtArea1 = input.earliestAtArea1Ms ?? nowMs;
-  const requiredBufferSec = DEFAULTS.boardingBufferSeconds + prefs.extraTransferBufferSec;
+  const requiredBufferSec =
+    DEFAULTS.boardingBufferSeconds + prefs.extraTransferBufferSec;
 
   assumptions.push(
     `Inter-area walk from ${RIVERFRONT.AREA_2.label} to ${RIVERFRONT.AREA_1.label} assumed at ${Math.round(walkSec / 60)} min.`,
   );
-  assumptions.push(`Boarding buffer of ${Math.round(requiredBufferSec / 60)} min applied at the transfer.`);
-  if (prefs.reducedMobility) assumptions.push('Walking times increased because reduced mobility is set.');
+  assumptions.push(
+    `Boarding buffer of ${Math.round(requiredBufferSec / 60)} min applied at the transfer.`,
+  );
+  if (prefs.reducedMobility)
+    assumptions.push(
+      "Walking times increased because reduced mobility is set.",
+    );
 
   const candidates = input.candidateRouteIds ?? CAMPUS_ROUTE_IDS;
   const options: UcscOption[] = [];
@@ -230,7 +252,7 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
     const destStopId = dest.stopIdByRoute[routeId];
     const blockedReasons: string[] = [];
     const rationale: string[] = [];
-    const scoreBreakdown: UcscOption['scoreBreakdown'] = [];
+    const scoreBreakdown: UcscOption["scoreBreakdown"] = [];
 
     // Coverage is a hard fact from the timetable, not a preference.
     if (!destStopId || !dest.servedBy.includes(routeId)) {
@@ -241,7 +263,9 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
         transferMarginSec: null,
         feasible: false,
         blockedReasons: [`Route ${routeId} does not serve ${dest.name}.`],
-        rationale: [`Route ${routeId} never reaches ${dest.name}, so it is not an option for this trip.`],
+        rationale: [
+          `Route ${routeId} never reaches ${dest.name}, so it is not an option for this trip.`,
+        ],
       });
       continue;
     }
@@ -266,7 +290,9 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
         score: Number.POSITIVE_INFINITY,
         scoreBreakdown: [],
         transferMarginSec: anyDeparture
-          ? Math.round((anyDeparture.departureEpochMs - earliestAtArea1) / 1000) - requiredBufferSec
+          ? Math.round(
+              (anyDeparture.departureEpochMs - earliestAtArea1) / 1000,
+            ) - requiredBufferSec
           : null,
         feasible: false,
         blockedReasons: [
@@ -288,7 +314,11 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
       nowMs,
     });
 
-    const scheduledArrival = getTripArrivalAtStop(reachable.tripId, destStopId, reachable.serviceDate);
+    const scheduledArrival = getTripArrivalAtStop(
+      reachable.tripId,
+      destStopId,
+      reachable.serviceDate,
+    );
     if (scheduledArrival === undefined) {
       options.push({
         routeId,
@@ -298,7 +328,9 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
         scoreBreakdown: [],
         transferMarginSec: null,
         feasible: false,
-        blockedReasons: [`This Route ${routeId} trip does not call at ${dest.name}.`],
+        blockedReasons: [
+          `This Route ${routeId} trip does not call at ${dest.name}.`,
+        ],
         rationale: [],
       });
       continue;
@@ -306,14 +338,16 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
 
     const deviationMs = (evidence.scheduleDeviationSec ?? 0) * 1000;
     const predictedArrival = scheduledArrival + deviationMs;
-    const spreadMs = evidence.departureRangeMs[1] - evidence.predictedDepartureMs;
+    const spreadMs =
+      evidence.departureRangeMs[1] - evidence.predictedDepartureMs;
     const arrivalRangeMs: [number, number] = [
       predictedArrival - spreadMs,
       predictedArrival + spreadMs,
     ];
 
     const transferMarginSec = Math.round(
-      (evidence.predictedDepartureMs - earliestAtArea1) / 1000 - requiredBufferSec,
+      (evidence.predictedDepartureMs - earliestAtArea1) / 1000 -
+        requiredBufferSec,
     );
 
     // --- scoring, all terms in seconds ---
@@ -321,21 +355,25 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
     // wins if it is better even on a bad day.
     let score = (arrivalRangeMs[1] - nowMs) / 1000;
     scoreBreakdown.push({
-      factor: 'conservative_arrival',
+      factor: "conservative_arrival",
       detail: `Conservative arrival at ${dest.name}.`,
       penaltySec: Math.round(score),
     });
 
     // Transfer risk: thin margins are penalised steeply and non-linearly.
     const transferRisk =
-      transferMarginSec >= 300 ? 0 : transferMarginSec >= 0 ? (300 - transferMarginSec) * 1.5 : 3600;
+      transferMarginSec >= 300
+        ? 0
+        : transferMarginSec >= 0
+          ? (300 - transferMarginSec) * 1.5
+          : 3600;
     if (transferRisk > 0) {
       score += transferRisk;
       scoreBreakdown.push({
-        factor: 'transfer_risk',
+        factor: "transfer_risk",
         detail:
           transferMarginSec < 0
-            ? 'You cannot reach this departure in time.'
+            ? "You cannot reach this departure in time."
             : `Only ${Math.round(transferMarginSec / 60)} min of slack at the transfer.`,
         penaltySec: Math.round(transferRisk),
       });
@@ -359,43 +397,51 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
     const fallbackLossSec =
       fallbackArrivalMs === null
         ? 30 * 60 // nothing else today: treat a no-show as costing half an hour
-        : Math.max(0, Math.round((fallbackArrivalMs - arrivalRangeMs[1]) / 1000));
-    const evidenceRisk = Math.round((1 - evidence.confidence) * fallbackLossSec);
+        : Math.max(
+            0,
+            Math.round((fallbackArrivalMs - arrivalRangeMs[1]) / 1000),
+          );
+    const evidenceRisk = Math.round(
+      (1 - evidence.confidence) * fallbackLossSec,
+    );
     score += evidenceRisk;
     scoreBreakdown.push({
-      factor: 'evidence_risk',
+      factor: "evidence_risk",
       detail:
-        `Confidence ${(evidence.confidence * 100).toFixed(0)}% (${evidence.label.replace('-', ' ')}). ` +
+        `Confidence ${(evidence.confidence * 100).toFixed(0)}% (${evidence.label.replace("-", " ")}). ` +
         (fallbackArrivalMs === null
-          ? 'No later option to fall back on.'
+          ? "No later option to fall back on."
           : `If it does not turn up, the next option costs about ${Math.round(fallbackLossSec / 60)} min more.`),
       penaltySec: evidenceRisk,
     });
 
     // Saved rider preference. Small by design: it breaks ties, it never
     // overrides a materially better or safer option.
-    if (prefs.preferQuieterRoute11 && routeId === '11') {
+    if (prefs.preferQuieterRoute11 && routeId === "11") {
       score -= 90;
       scoreBreakdown.push({
-        factor: 'rider_preference',
+        factor: "rider_preference",
         detail:
-          'Saved rider preference: Route 11 usually feels less crowded. This is your own note, not live crowding data.',
+          "Saved rider preference: Route 11 usually feels less crowded. This is your own note, not live crowding data.",
         penaltySec: -90,
       });
     }
 
     // Agency-reported occupancy, used only when the feed actually publishes it.
-    if (evidence.occupancyStatus === 'FULL' || evidence.occupancyStatus === 'CRUSHED_STANDING_ROOM_ONLY') {
+    if (
+      evidence.occupancyStatus === "FULL" ||
+      evidence.occupancyStatus === "CRUSHED_STANDING_ROOM_ONLY"
+    ) {
       score += 180;
       scoreBreakdown.push({
-        factor: 'reported_occupancy',
-        detail: `Agency-reported occupancy: ${evidence.occupancyStatus.replaceAll('_', ' ').toLowerCase()}.`,
+        factor: "reported_occupancy",
+        detail: `Agency-reported occupancy: ${evidence.occupancyStatus.replaceAll("_", " ").toLowerCase()}.`,
         penaltySec: 180,
       });
     }
 
-    if (evidence.label === 'blocked') {
-      blockedReasons.push('A service alert rules this option out.');
+    if (evidence.label === "blocked") {
+      blockedReasons.push("A service alert rules this option out.");
     }
 
     rationale.push(
@@ -404,7 +450,7 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
     rationale.push(
       evidence.vehicleVisible
         ? `A vehicle position is visible, updated ${evidence.vehicleAgeSeconds}s ago.`
-        : 'No current vehicle position is visible for this trip.',
+        : "No current vehicle position is visible for this trip.",
     );
     rationale.push(`Transfer slack ${Math.round(transferMarginSec / 60)} min.`);
 
@@ -422,7 +468,9 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
     });
   }
 
-  const feasible = options.filter((o) => o.feasible && Number.isFinite(o.score));
+  const feasible = options.filter(
+    (o) => o.feasible && Number.isFinite(o.score),
+  );
   feasible.sort((a, b) => a.score - b.score);
   const best = feasible[0];
 
@@ -430,11 +478,14 @@ export function compareUcscOptions(input: CompareUcscInput): UcscComparison {
   if (!best) {
     undecidedReason =
       options.length === 0
-        ? 'No campus routes were evaluated.'
-        : `None of Routes ${candidates.join(', ')} can be recommended for ${dest.name} right now. ${options
+        ? "No campus routes were evaluated."
+        : `None of Routes ${candidates.join(", ")} can be recommended for ${dest.name} right now. ${options
             .flatMap((o) => o.blockedReasons)
-            .join(' ')}`;
-  } else if (feasible.length > 1 && Math.abs(feasible[0].score - feasible[1].score) < 60) {
+            .join(" ")}`;
+  } else if (
+    feasible.length > 1 &&
+    Math.abs(feasible[0].score - feasible[1].score) < 60
+  ) {
     assumptions.push(
       `Routes ${feasible[0].routeId} and ${feasible[1].routeId} score within a minute of each other; either is reasonable.`,
     );
@@ -490,9 +541,10 @@ export function buildMultilegTrip(
   if (arrival) {
     const boardStopId = input.originStopId ?? RIVERFRONT.AREA_2.stopId;
     const boardTime =
-      getStopTimesForTrip(arrival.tripId).find((s) => s.stop_id === boardStopId)?.departureSec ?? null;
+      getStopTimesForTrip(arrival.tripId).find((s) => s.stop_id === boardStopId)
+        ?.departureSec ?? null;
     legs.push({
-      kind: 'bus',
+      kind: "bus",
       routeId: TRUNK_ROUTE_ID,
       tripId: arrival.tripId,
       label: `Route ${TRUNK_ROUTE_ID} to ${RIVERFRONT.AREA_2.label}`,
@@ -504,7 +556,10 @@ export function buildMultilegTrip(
         boardTime !== null
           ? serviceDateTimeToEpochMs(
               // Reuse the arrival's own service day.
-              new Date(arrival.scheduledArrivalMs).toISOString().slice(0, 10).replaceAll('-', ''),
+              new Date(arrival.scheduledArrivalMs)
+                .toISOString()
+                .slice(0, 10)
+                .replaceAll("-", ""),
               boardTime,
             )
           : arrival.scheduledArrivalMs,
@@ -512,7 +567,7 @@ export function buildMultilegTrip(
       evidence: arrival.evidence,
     });
     legs.push({
-      kind: 'walk',
+      kind: "walk",
       label: `Walk ${RIVERFRONT.AREA_2.label} → ${RIVERFRONT.AREA_1.label}`,
       fromStopId: RIVERFRONT.AREA_2.stopId,
       fromStopName: RIVERFRONT.AREA_2.label,
@@ -523,7 +578,7 @@ export function buildMultilegTrip(
     });
     earliestAtArea1 = arrival.predictedArrivalMs + walkSec * 1000;
     assumptions.push(
-      `Route 35 arrival at ${RIVERFRONT.AREA_2.label} taken from ${arrival.evidence.label.replace('-', ' ')} evidence.`,
+      `Route 35 arrival at ${RIVERFRONT.AREA_2.label} taken from ${arrival.evidence.label.replace("-", " ")} evidence.`,
     );
   } else {
     earliestAtArea1 = input.nowMs;
@@ -541,16 +596,21 @@ export function buildMultilegTrip(
     preferences: prefs,
   });
 
-  const best = comparison.options.find((o) => o.routeId === comparison.bestRouteId);
+  const best = comparison.options.find(
+    (o) => o.routeId === comparison.bestRouteId,
+  );
   if (best?.evidence && best.arrivalRangeMs) {
     legs.push({
-      kind: 'bus',
+      kind: "bus",
       routeId: best.routeId,
       tripId: best.tripId,
       label: `Route ${best.routeId} to ${comparison.destinationName}`,
       fromStopId: RIVERFRONT.AREA_1.stopId,
       fromStopName: RIVERFRONT.AREA_1.label,
-      toStopId: findCampusDestination(comparison.destinationKey)?.stopIdByRoute[best.routeId] ?? '',
+      toStopId:
+        findCampusDestination(comparison.destinationKey)?.stopIdByRoute[
+          best.routeId
+        ] ?? "",
       toStopName: comparison.destinationName,
       departureMs: best.evidence.predictedDepartureMs,
       arrivalMs: (best.arrivalRangeMs[0] + best.arrivalRangeMs[1]) / 2,
@@ -563,7 +623,9 @@ export function buildMultilegTrip(
   const downtownTransferMarginSec =
     arrival && best?.evidence
       ? Math.round(
-          (best.evidence.predictedDepartureMs - arrival.predictedArrivalMs) / 1000 - walkSec,
+          (best.evidence.predictedDepartureMs - arrival.predictedArrivalMs) /
+            1000 -
+            walkSec,
         )
       : null;
 
@@ -636,7 +698,9 @@ export function buildReturnTrip(input: ReturnTripInput): ReturnTrip {
   }).filter((d) => d.directionId === 0);
 
   const reachable = departures.find(
-    (d) => d.departureEpochMs >= from + (walkSec + DEFAULTS.boardingBufferSeconds) * 1000,
+    (d) =>
+      d.departureEpochMs >=
+      from + (walkSec + DEFAULTS.boardingBufferSeconds) * 1000,
   );
 
   if (!reachable) {
@@ -649,7 +713,7 @@ export function buildReturnTrip(input: ReturnTripInput): ReturnTrip {
       walkFromArea3Sec: walkSec,
       next35: null,
       waitSeconds: null,
-      headwaySummary: '',
+      headwaySummary: "",
       assumptions,
       blockedReasons,
       engineVersion: ENGINE_VERSION,
@@ -676,8 +740,10 @@ export function buildReturnTrip(input: ReturnTripInput): ReturnTrip {
       departureRangeMs: evidence.departureRangeMs,
       evidence,
     },
-    waitSeconds: Math.round((evidence.predictedDepartureMs - input.nowMs) / 1000),
-    headwaySummary: '',
+    waitSeconds: Math.round(
+      (evidence.predictedDepartureMs - input.nowMs) / 1000,
+    ),
+    headwaySummary: "",
     assumptions,
     blockedReasons,
     engineVersion: ENGINE_VERSION,

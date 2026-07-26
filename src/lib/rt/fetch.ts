@@ -12,20 +12,20 @@
  * We never synthesise a plausible-looking "live" value. A missing vehicle is
  * reported as missing.
  */
-import GtfsRealtimeBindings from 'gtfs-realtime-bindings';
-import { DEFAULTS } from '@/lib/domain';
+import GtfsRealtimeBindings from "gtfs-realtime-bindings";
+import { DEFAULTS } from "@/lib/domain";
 import type {
   Freshness,
   NormalisedAlert,
   NormalisedTripUpdate,
   NormalisedVehicle,
   RealtimeSnapshot,
-} from './types';
+} from "./types";
 
 export const RT_ENDPOINTS = {
-  vehicles: 'https://rt.scmetro.org/gtfsrt/vehicles',
-  trips: 'https://rt.scmetro.org/gtfsrt/trips',
-  alerts: 'https://rt.scmetro.org/gtfsrt/alerts',
+  vehicles: "https://rt.scmetro.org/gtfsrt/vehicles",
+  trips: "https://rt.scmetro.org/gtfsrt/trips",
+  alerts: "https://rt.scmetro.org/gtfsrt/alerts",
 } as const;
 
 export type RtFeedName = keyof typeof RT_ENDPOINTS;
@@ -33,12 +33,12 @@ export type RtFeedName = keyof typeof RT_ENDPOINTS;
 /** protobufjs hands back Long|number|string for 64-bit fields. */
 function toNumber(v: unknown): number | null {
   if (v === null || v === undefined) return null;
-  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
-  if (typeof v === 'string') {
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "string") {
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
   }
-  if (typeof v === 'object' && v !== null && 'toNumber' in v) {
+  if (typeof v === "object" && v !== null && "toNumber" in v) {
     const n = (v as { toNumber(): number }).toNumber();
     return Number.isFinite(n) ? n : null;
   }
@@ -52,15 +52,19 @@ function secondsToMs(v: unknown): number | null {
   return n > 1e11 ? n : n * 1000;
 }
 
-export function computeFreshness(fetchedAtMs: number, feedTimestampMs: number | null, nowMs: number): Freshness {
+export function computeFreshness(
+  fetchedAtMs: number,
+  feedTimestampMs: number | null,
+  nowMs: number,
+): Freshness {
   const reference = feedTimestampMs ?? fetchedAtMs;
   const ageSeconds = Math.max(0, Math.round((nowMs - reference) / 1000));
-  const label: Freshness['label'] =
+  const label: Freshness["label"] =
     ageSeconds <= DEFAULTS.staleAfterSeconds
-      ? 'fresh'
+      ? "fresh"
       : ageSeconds <= DEFAULTS.hardStaleAfterSeconds
-        ? 'stale'
-        : 'expired';
+        ? "stale"
+        : "expired";
   return { fetchedAtMs, feedTimestampMs, ageSeconds, label };
 }
 
@@ -84,7 +88,10 @@ export function decodeFeedMessage(bytes: Uint8Array): DecodedFeed {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export function normaliseVehicles(entities: any[], fetchedAtMs: number): NormalisedVehicle[] {
+export function normaliseVehicles(
+  entities: any[],
+  fetchedAtMs: number,
+): NormalisedVehicle[] {
   const out: NormalisedVehicle[] = [];
   for (const e of entities) {
     const v = e?.vehicle;
@@ -104,7 +111,10 @@ export function normaliseVehicles(entities: any[], fetchedAtMs: number): Normali
       currentStopSequence: toNumber(v.currentStopSequence),
       currentStatus: v.currentStatus ?? null,
       timestampMs,
-      ageSeconds: timestampMs === null ? null : Math.max(0, Math.round((fetchedAtMs - timestampMs) / 1000)),
+      ageSeconds:
+        timestampMs === null
+          ? null
+          : Math.max(0, Math.round((fetchedAtMs - timestampMs) / 1000)),
       // Agency-reported when present. Absent means unknown, never "empty".
       occupancyStatus: v.occupancyStatus ?? null,
     });
@@ -143,7 +153,9 @@ export function normaliseTripUpdates(entities: any[]): NormalisedTripUpdate[] {
 function pickTranslation(t: any): string | null {
   const items = t?.translation;
   if (!Array.isArray(items) || items.length === 0) return null;
-  const en = items.find((x: any) => (x.language ?? '').toLowerCase().startsWith('en'));
+  const en = items.find((x: any) =>
+    (x.language ?? "").toLowerCase().startsWith("en"),
+  );
   return (en ?? items[0]).text ?? null;
 }
 
@@ -154,7 +166,7 @@ export function normaliseAlerts(entities: any[]): NormalisedAlert[] {
     if (!a) continue;
     const informed = a.informedEntity ?? [];
     out.push({
-      id: String(e.id ?? ''),
+      id: String(e.id ?? ""),
       cause: a.cause ?? null,
       effect: a.effect ?? null,
       headerText: pickTranslation(a.headerText),
@@ -174,15 +186,19 @@ export function normaliseAlerts(entities: any[]): NormalisedAlert[] {
 
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-async function fetchOne(name: RtFeedName, signal?: AbortSignal): Promise<DecodedFeed> {
+async function fetchOne(
+  name: RtFeedName,
+  signal?: AbortSignal,
+): Promise<DecodedFeed> {
   const res = await fetch(RT_ENDPOINTS[name], {
     signal,
-    cache: 'no-store',
-    headers: { Accept: 'application/x-google-protobuf' },
+    cache: "no-store",
+    headers: { Accept: "application/x-google-protobuf" },
   });
   if (!res.ok) throw new Error(`${name} feed returned HTTP ${res.status}`);
   const bytes = new Uint8Array(await res.arrayBuffer());
-  if (bytes.byteLength === 0) throw new Error(`${name} feed returned an empty body`);
+  if (bytes.byteLength === 0)
+    throw new Error(`${name} feed returned an empty body`);
   return decodeFeedMessage(bytes);
 }
 
@@ -219,7 +235,7 @@ export async function fetchRealtimeSnapshot(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  const names: RtFeedName[] = ['vehicles', 'trips', 'alerts'];
+  const names: RtFeedName[] = ["vehicles", "trips", "alerts"];
   const settled = await Promise.allSettled(
     names.map((n) => doFetch(n, controller.signal)),
   );
@@ -228,21 +244,25 @@ export async function fetchRealtimeSnapshot(
   const sources = names.map((name, i) => ({
     name,
     url: RT_ENDPOINTS[name],
-    ok: settled[i].status === 'fulfilled',
-    fetchedAtMs: settled[i].status === 'fulfilled' ? nowMs : null,
+    ok: settled[i].status === "fulfilled",
+    fetchedAtMs: settled[i].status === "fulfilled" ? nowMs : null,
   }));
 
   const okCount = sources.filter((s) => s.ok).length;
   if (okCount === 0) {
     const reason =
       settled
-        .map((s) => (s.status === 'rejected' ? String(s.reason?.message ?? s.reason) : null))
+        .map((s) =>
+          s.status === "rejected"
+            ? String(s.reason?.message ?? s.reason)
+            : null,
+        )
         .filter(Boolean)
-        .join('; ') || 'all real-time feeds unavailable';
+        .join("; ") || "all real-time feeds unavailable";
     if (lastGood) {
       return {
         ...lastGood,
-        origin: 'cache',
+        origin: "cache",
         degradedReason: `Live feeds unreachable (${reason}). Showing the last successful snapshot.`,
         freshness: computeFreshness(
           lastGood.freshness.fetchedAtMs,
@@ -255,7 +275,10 @@ export async function fetchRealtimeSnapshot(
     throw new RealtimeUnavailableError(reason);
   }
 
-  const get = (i: number) => (settled[i].status === 'fulfilled' ? (settled[i] as PromiseFulfilledResult<DecodedFeed>).value : null);
+  const get = (i: number) =>
+    settled[i].status === "fulfilled"
+      ? (settled[i] as PromiseFulfilledResult<DecodedFeed>).value
+      : null;
   const vehiclesFeed = get(0);
   const tripsFeed = get(1);
   const alertsFeed = get(2);
@@ -267,14 +290,20 @@ export async function fetchRealtimeSnapshot(
     null;
 
   const snapshot: RealtimeSnapshot = {
-    vehicles: normaliseVehicles((vehiclesFeed?.entities ?? []) as never[], nowMs),
+    vehicles: normaliseVehicles(
+      (vehiclesFeed?.entities ?? []) as never[],
+      nowMs,
+    ),
     tripUpdates: normaliseTripUpdates((tripsFeed?.entities ?? []) as never[]),
     alerts: normaliseAlerts((alertsFeed?.entities ?? []) as never[]),
     freshness: computeFreshness(nowMs, feedTimestampMs, nowMs),
-    origin: 'live',
+    origin: "live",
     degradedReason:
       okCount < names.length
-        ? `Partial feed outage: ${sources.filter((s) => !s.ok).map((s) => s.name).join(', ')} unavailable.`
+        ? `Partial feed outage: ${sources
+            .filter((s) => !s.ok)
+            .map((s) => s.name)
+            .join(", ")} unavailable.`
         : undefined,
     sources,
   };
@@ -286,6 +315,6 @@ export async function fetchRealtimeSnapshot(
 export class RealtimeUnavailableError extends Error {
   constructor(reason: string) {
     super(reason);
-    this.name = 'RealtimeUnavailableError';
+    this.name = "RealtimeUnavailableError";
   }
 }

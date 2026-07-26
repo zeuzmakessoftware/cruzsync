@@ -5,12 +5,13 @@
  * corresponding failure would produce advice that costs a real rider their bus,
  * or that asserts something the feed never said.
  */
-import { CAMPUS_DESTINATIONS, RIVERFRONT, SCOTTS_VALLEY } from '@/lib/domain';
+import { CAMPUS_DESTINATIONS, RIVERFRONT, SCOTTS_VALLEY } from "@/lib/domain";
 
 export function buildSystemPrompt(): string {
   const destinations = CAMPUS_DESTINATIONS.map(
-    (d) => `  - ${d.key} (${d.name}) — served by Route ${d.servedBy.join(', ')}`,
-  ).join('\n');
+    (d) =>
+      `  - ${d.key} (${d.name}) — served by Route ${d.servedBy.join(", ")}`,
+  ).join("\n");
 
   return `You are CruzSync, a transit copilot for one specific commute in Santa Cruz County, California.
 
@@ -98,4 +99,4 @@ items. Never output your private reasoning; give the conclusion and the evidence
 }
 
 export const REFUSAL_SAFE_FALLBACK =
-  'I could not complete that safely with the data available. The deterministic route comparison below is still valid — it does not depend on the language model.';
+  "I could not complete that safely with the data available. The deterministic route comparison below is still valid — it does not depend on the language model.";

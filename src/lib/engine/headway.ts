@@ -6,8 +6,8 @@
  * would understate the evening wait by half and quietly break the exact promise
  * CruzSync makes to the rider.
  */
-import { getScheduledDepartures } from '@/lib/gtfs/feed';
-import type { ScheduledDeparture } from '@/lib/gtfs/types';
+import { getScheduledDepartures } from "@/lib/gtfs/feed";
+import type { ScheduledDeparture } from "@/lib/gtfs/types";
 
 export interface HeadwayAnalysis {
   routeId: string;
@@ -47,14 +47,19 @@ export function analyzeHeadway(q: HeadwayQuery): HeadwayAnalysis {
   }
 
   const times = departures.map((d) => d.departureEpochMs);
-  const gapsMinutes = times.slice(1).map((t, i) => Math.round((t - times[i]) / 60000));
+  const gapsMinutes = times
+    .slice(1)
+    .map((t, i) => Math.round((t - times[i]) / 60000));
   const sorted = [...gapsMinutes].sort((a, b) => a - b);
-  const medianGapMinutes = sorted.length ? sorted[Math.floor(sorted.length / 2)] : null;
+  const medianGapMinutes = sorted.length
+    ? sorted[Math.floor(sorted.length / 2)]
+    : null;
   const maxGapMinutes = sorted.length ? sorted[sorted.length - 1] : null;
   const minGap = sorted.length ? sorted[0] : null;
   const nextGapMinutes = gapsMinutes.length ? gapsMinutes[0] : null;
   // "Degrades" means the worst gap is at least half again the best one.
-  const degrades = minGap !== null && maxGapMinutes !== null && maxGapMinutes >= minGap * 1.5;
+  const degrades =
+    minGap !== null && maxGapMinutes !== null && maxGapMinutes >= minGap * 1.5;
 
   let summary: string;
   if (departures.length === 0) {

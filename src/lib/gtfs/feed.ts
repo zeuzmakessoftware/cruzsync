@@ -5,14 +5,14 @@
  * Everything here is pure and synchronous -- the data is bundled, so there is no
  * network dependency and the tests can exercise real schedules rather than mocks.
  */
-import metaJson from '@data/gtfs/meta.json';
-import routesJson from '@data/gtfs/routes.json';
-import tripsJson from '@data/gtfs/trips.json';
-import stopsJson from '@data/gtfs/stops.json';
-import stopTimesJson from '@data/gtfs/stop_times.json';
-import calendarJson from '@data/gtfs/calendar.json';
-import calendarDatesJson from '@data/gtfs/calendar_dates.json';
-import shapesJson from '@data/gtfs/shapes.json';
+import metaJson from "@data/gtfs/meta.json";
+import routesJson from "@data/gtfs/routes.json";
+import tripsJson from "@data/gtfs/trips.json";
+import stopsJson from "@data/gtfs/stops.json";
+import stopTimesJson from "@data/gtfs/stop_times.json";
+import calendarJson from "@data/gtfs/calendar.json";
+import calendarDatesJson from "@data/gtfs/calendar_dates.json";
+import shapesJson from "@data/gtfs/shapes.json";
 
 import type {
   GtfsCalendar,
@@ -24,14 +24,14 @@ import type {
   GtfsStopTime,
   GtfsTrip,
   ScheduledDeparture,
-} from './types';
+} from "./types";
 import {
   agencyDateString,
   agencyDayOfWeek,
   parseGtfsTime,
   serviceDateTimeToEpochMs,
   shiftServiceDate,
-} from './time';
+} from "./time";
 
 export const gtfsMeta = metaJson as GtfsMeta;
 export const routes = routesJson as GtfsRoute[];
@@ -41,7 +41,10 @@ export const calendar = calendarJson as unknown as GtfsCalendar[];
 export const calendarDates = calendarDatesJson as unknown as GtfsCalendarDate[];
 export const shapes = shapesJson as GtfsShape[];
 
-const stopTimesRaw = stopTimesJson as { fields: string[]; rows: (string | number)[][] };
+const stopTimesRaw = stopTimesJson as {
+  fields: string[];
+  rows: (string | number)[][];
+};
 
 /** Decoded once at module load; the tuple encoding is purely an on-disk concern. */
 export const stopTimes: GtfsStopTime[] = stopTimesRaw.rows.map((r) => {
@@ -50,11 +53,11 @@ export const stopTimes: GtfsStopTime[] = stopTimesRaw.rows.map((r) => {
   return {
     trip_id: String(r[0]),
     arrivalSec: arrival,
-    departureSec: depRaw === '' ? arrival : parseGtfsTime(depRaw),
+    departureSec: depRaw === "" ? arrival : parseGtfsTime(depRaw),
     stop_id: String(r[3]),
     stop_sequence: Number(r[4]),
-    pickup_type: String(r[5] ?? ''),
-    drop_off_type: String(r[6] ?? ''),
+    pickup_type: String(r[5] ?? ""),
+    drop_off_type: String(r[6] ?? ""),
   };
 });
 
@@ -72,7 +75,8 @@ for (const st of stopTimes) {
   if (!b) stopTimesByTrip.set(st.trip_id, (b = []));
   b.push(st);
 }
-for (const list of stopTimesByTrip.values()) list.sort((x, y) => x.stop_sequence - y.stop_sequence);
+for (const list of stopTimesByTrip.values())
+  list.sort((x, y) => x.stop_sequence - y.stop_sequence);
 
 export function getStopTimesForTrip(tripId: string): GtfsStopTime[] {
   return stopTimesByTrip.get(tripId) ?? [];
@@ -83,13 +87,13 @@ export function getStop(stopId: string): GtfsStop | undefined {
 }
 
 const DAY_FIELDS = [
-  'sunday',
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
 ] as const;
 
 /**
@@ -101,12 +105,12 @@ export function activeServiceIds(serviceDate: string): Set<string> {
   const active = new Set<string>();
   for (const c of calendar) {
     if (serviceDate < c.start_date || serviceDate > c.end_date) continue;
-    if (c[DAY_FIELDS[dow]] === '1') active.add(c.service_id);
+    if (c[DAY_FIELDS[dow]] === "1") active.add(c.service_id);
   }
   for (const ex of calendarDates) {
     if (ex.date !== serviceDate) continue;
-    if (ex.exception_type === '1') active.add(ex.service_id);
-    else if (ex.exception_type === '2') active.delete(ex.service_id);
+    if (ex.exception_type === "1") active.add(ex.service_id);
+    else if (ex.exception_type === "2") active.delete(ex.service_id);
   }
   return active;
 }
@@ -129,10 +133,16 @@ export interface DepartureQuery {
  * Both today's and yesterday's service days are scanned, because a trip listed
  * at 24:20:00 yesterday is still running at 00:20 today.
  */
-export function getScheduledDepartures(q: DepartureQuery): ScheduledDeparture[] {
+export function getScheduledDepartures(
+  q: DepartureQuery,
+): ScheduledDeparture[] {
   const toMs = q.fromMs + q.windowMinutes * 60_000;
   const today = agencyDateString(q.fromMs);
-  const candidates = [shiftServiceDate(today, -1), today, shiftServiceDate(today, 1)];
+  const candidates = [
+    shiftServiceDate(today, -1),
+    today,
+    shiftServiceDate(today, 1),
+  ];
   const routeFilter = q.routeIds ? new Set(q.routeIds) : null;
   const atStop = stopTimesByStop.get(q.stopId) ?? [];
   const out: ScheduledDeparture[] = [];
@@ -144,8 +154,11 @@ export function getScheduledDepartures(q: DepartureQuery): ScheduledDeparture[] 
       const trip = tripsById.get(st.trip_id);
       if (!trip || !services.has(trip.service_id)) continue;
       if (routeFilter && !routeFilter.has(trip.route_id)) continue;
-      if (q.requirePickup !== false && st.pickup_type === '1') continue;
-      const departureEpochMs = serviceDateTimeToEpochMs(serviceDate, st.departureSec);
+      if (q.requirePickup !== false && st.pickup_type === "1") continue;
+      const departureEpochMs = serviceDateTimeToEpochMs(
+        serviceDate,
+        st.departureSec,
+      );
       if (departureEpochMs < q.fromMs || departureEpochMs > toMs) continue;
       out.push({
         tripId: st.trip_id,

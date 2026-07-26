@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * The two-leg network map.
@@ -12,12 +12,21 @@
  * trips appear as hollow rings, and both carry a text label in their popup so
  * the distinction never depends on colour alone.
  */
-import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Polyline, CircleMarker, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { RIVERFRONT, SCOTTS_VALLEY, ROUTE_META } from '@/lib/domain';
-import type { NormalisedVehicle } from '@/lib/rt/types';
+import { useEffect, useMemo } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Polyline,
+  CircleMarker,
+  Marker,
+  Popup,
+  Tooltip,
+  useMap,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { RIVERFRONT, SCOTTS_VALLEY, ROUTE_META } from "@/lib/domain";
+import type { NormalisedVehicle } from "@/lib/rt/types";
 
 export interface MapShape {
   routeId: string;
@@ -26,14 +35,14 @@ export interface MapShape {
 }
 
 const AREA_STYLE: Record<string, { color: string; n: string }> = {
-  [RIVERFRONT.AREA_1.stopId]: { color: 'var(--sunrise-500)', n: '1' },
-  [RIVERFRONT.AREA_2.stopId]: { color: 'var(--pacific-700)', n: '2' },
-  [RIVERFRONT.AREA_3.stopId]: { color: 'var(--redwood-600)', n: '3' },
+  [RIVERFRONT.AREA_1.stopId]: { color: "var(--sunrise-500)", n: "1" },
+  [RIVERFRONT.AREA_2.stopId]: { color: "var(--pacific-700)", n: "2" },
+  [RIVERFRONT.AREA_3.stopId]: { color: "var(--redwood-600)", n: "3" },
 };
 
 function areaIcon(n: string, color: string) {
   return L.divIcon({
-    className: '',
+    className: "",
     html: `<div style="
       width:30px;height:30px;border-radius:50%;
       background:${color};color:#fff;border:3px solid #fff;
@@ -66,7 +75,10 @@ export default function NetworkMap({
   /** Trips with credible real-time evidence, drawn differently from the rest. */
   observedTripIds: string[];
 }) {
-  const highlighted = useMemo(() => new Set(highlightRouteIds), [highlightRouteIds]);
+  const highlighted = useMemo(
+    () => new Set(highlightRouteIds),
+    [highlightRouteIds],
+  );
   const observed = useMemo(() => new Set(observedTripIds), [observedTripIds]);
 
   const allPoints = useMemo<[number, number][]>(
@@ -83,7 +95,7 @@ export default function NetworkMap({
       center={[36.99, -122.04]}
       zoom={12}
       scrollWheelZoom={false}
-      style={{ height: '100%', width: '100%' }}
+      style={{ height: "100%", width: "100%" }}
       aria-label="Map of Route 35 between Scotts Valley and downtown Santa Cruz, and Routes 11, 18 and 19 between downtown and UCSC"
     >
       <TileLayer
@@ -101,15 +113,15 @@ export default function NetworkMap({
             key={`${s.routeId}-${s.directionId}`}
             positions={s.points}
             pathOptions={{
-              color: meta?.color ?? '#666',
+              color: meta?.color ?? "#666",
               weight: isHi ? 5 : 2.5,
               opacity: isHi ? 0.95 : 0.35,
               // Route 35 solid (the trunk), campus routes dashed (the choice).
-              dashArray: s.routeId === '35' ? undefined : '7 6',
+              dashArray: s.routeId === "35" ? undefined : "7 6",
             }}
           >
             <Tooltip sticky>
-              Route {s.routeId} — {meta?.longName ?? ''}
+              Route {s.routeId} — {meta?.longName ?? ""}
             </Tooltip>
           </Polyline>
         );
@@ -119,14 +131,14 @@ export default function NetworkMap({
         .filter((v) => v.lat !== null && v.lon !== null)
         .map((v, i) => {
           const hasEvidence = v.tripId ? observed.has(v.tripId) : false;
-          const color = ROUTE_META[v.routeId ?? '']?.color ?? '#555';
+          const color = ROUTE_META[v.routeId ?? ""]?.color ?? "#555";
           return (
             <CircleMarker
               key={`${v.vehicleId ?? i}-${v.tripId ?? i}`}
               center={[v.lat!, v.lon!]}
               radius={hasEvidence ? 8 : 6}
               pathOptions={{
-                color: '#fff',
+                color: "#fff",
                 weight: 2,
                 fillColor: color,
                 // Hollow = we can see it but it is not driving a recommendation.
@@ -136,15 +148,19 @@ export default function NetworkMap({
               <Popup>
                 <strong>Route {v.routeId}</strong>
                 <br />
-                Vehicle {v.vehicleId ?? 'unlabelled'}
+                Vehicle {v.vehicleId ?? "unlabelled"}
                 <br />
-                {v.ageSeconds !== null ? `Position ${v.ageSeconds}s old` : 'Position age unknown'}
+                {v.ageSeconds !== null
+                  ? `Position ${v.ageSeconds}s old`
+                  : "Position age unknown"}
                 <br />
-                {hasEvidence ? 'Real-time evidence used' : 'Not used for a recommendation'}
+                {hasEvidence
+                  ? "Real-time evidence used"
+                  : "Not used for a recommendation"}
                 <br />
                 {v.occupancyStatus
-                  ? `Agency-reported occupancy: ${v.occupancyStatus.replaceAll('_', ' ').toLowerCase()}`
-                  : 'Occupancy not reported'}
+                  ? `Agency-reported occupancy: ${v.occupancyStatus.replaceAll("_", " ").toLowerCase()}`
+                  : "Occupancy not reported"}
               </Popup>
             </CircleMarker>
           );
@@ -152,7 +168,7 @@ export default function NetworkMap({
 
       <Marker
         position={[SCOTTS_VALLEY.lat, SCOTTS_VALLEY.lon]}
-        icon={areaIcon('S', 'var(--pacific-800)')}
+        icon={areaIcon("S", "var(--pacific-800)")}
       >
         <Popup>
           <strong>{SCOTTS_VALLEY.name}</strong>
@@ -164,7 +180,11 @@ export default function NetworkMap({
       {[RIVERFRONT.AREA_1, RIVERFRONT.AREA_2, RIVERFRONT.AREA_3].map((area) => {
         const st = AREA_STYLE[area.stopId];
         return (
-          <Marker key={area.stopId} position={[area.lat, area.lon]} icon={areaIcon(st.n, st.color)}>
+          <Marker
+            key={area.stopId}
+            position={[area.lat, area.lon]}
+            icon={areaIcon(st.n, st.color)}
+          >
             <Popup>
               <strong>{area.label}</strong>
               <br />

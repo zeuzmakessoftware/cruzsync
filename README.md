@@ -1,7 +1,7 @@
 # CruzSync
 
 **Know what to take. Know where to wait.**
-*Turn dead bus time into useful neighbourhood time.*
+_Turn dead bus time into useful neighbourhood time._
 
 A Gemma-powered multi-leg commute and smart-waiting copilot for the Scotts Valley → UCSC
 commute on Santa Cruz METRO.
@@ -43,10 +43,10 @@ wrong question.
 
 This commute has **two sequential legs**, never two competing options.
 
-| | |
-|---|---|
-| **Leg 1** | Route 35: Scotts Valley ↔ **RiverFront Area 2** (`Soquel Ave & Front`, stop `1466`) |
-| **Walk** | Area 2 → Area 1 outbound; Area 3 → Area 2 on the way home (~3 min) |
+|           |                                                                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Leg 1** | Route 35: Scotts Valley ↔ **RiverFront Area 2** (`Soquel Ave & Front`, stop `1466`)                                                                                 |
+| **Walk**  | Area 2 → Area 1 outbound; Area 3 → Area 2 on the way home (~3 min)                                                                                                  |
 | **Leg 2** | Routes 11 / 18 / 19: **RiverFront Area 1** (`River St S. & Soquel Ave`, stop `1726`) → UCSC, returning to **RiverFront Area 3** (`Front & Soquel Ave`, stop `1594`) |
 
 Those three "areas" are three genuinely distinct GTFS stops about 100 m apart — not three
@@ -61,7 +61,7 @@ The comparison tool physically cannot accept Route 35 as a candidate — its sch
 Both were computed from `stop_times.txt`, not assumed:
 
 - **Routes 11 and 19 run the campus loop one way; Route 18 runs it the other.** The same
-  physical destination is a *different* GTFS stop depending on which bus you board, and it
+  physical destination is a _different_ GTFS stop depending on which bus you board, and it
   sits at a different point in the loop. Ride time to a given destination therefore differs
   by route in a way no constant offset captures.
 - **Coverage differs.** Only Route 18 reaches Crown & Merrill, the East Field House and Family
@@ -72,7 +72,7 @@ Both were computed from `stop_times.txt`, not assumed:
 ### About the Route 11 "gamble"
 
 Route 11 reaching Science Hill roughly 15 minutes faster than Route 19 is a fact from the
-timetable. Route 11 *feeling* less crowded is **my personal experience, saved as a preference**
+timetable. Route 11 _feeling_ less crowded is **my personal experience, saved as a preference**
 — it is worth 90 seconds in the ranking, disclosed as a rider note, and it cannot override a
 route that genuinely gets you there sooner or more safely. There is a test asserting exactly
 that.
@@ -84,12 +84,12 @@ it as agency-reported. It never invents a passenger count.
 
 ## Screens
 
-| Comparing the campus leg | The sanitised tool trace |
-|---|---|
+| Comparing the campus leg                                | The sanitised tool trace                          |
+| ------------------------------------------------------- | ------------------------------------------------- |
 | ![Route comparison](docs/screenshots/02-comparison.png) | ![Tool trace](docs/screenshots/03-tool-trace.png) |
 
-| Making the wait useful | The leave-by countdown |
-|---|---|
+| Making the wait useful                              | The leave-by countdown                        |
+| --------------------------------------------------- | --------------------------------------------- |
 | ![Wait places](docs/screenshots/04-wait-places.png) | ![Leave by](docs/screenshots/05-leave-by.png) |
 
 ---
@@ -167,7 +167,7 @@ place_is_safe = open_through(leave_by) && usable_wait >= minimum_useful_visit
 ```
 
 The uncertainty buffer **grows** when evidence is weak, when the feed is behind, when the
-vehicle is moving fast (it may arrive *early*, which is precisely how a comfortable rider gets
+vehicle is moving fast (it may arrive _early_, which is precisely how a comfortable rider gets
 caught out), and when walking time is estimated rather than verified. Uncertainty must always
 cost the rider time, never earn it.
 
@@ -180,7 +180,7 @@ produce confident, plausible, wrong advice.
 
 - **A missing vehicle is not a cancellation.** The only thing that lets CruzSync say a bus is
   cancelled is the agency publishing `scheduleRelationship: CANCELED`, or an alert saying so.
-  Otherwise the wording is *"No current vehicle position is visible for this trip"*, together
+  Otherwise the wording is _"No current vehicle position is visible for this trip"_, together
   with what that does and does not mean.
 - **Amenities are `true | false | 'unknown'`, never inferred from category.** A café is not
   automatically quiet. A bookshop does not automatically have a restroom. A restaurant does not
@@ -194,9 +194,9 @@ produce confident, plausible, wrong advice.
   disclosure only and contributes exactly zero to the score. There is a test asserting two
   otherwise-identical venues score identically.
 - **Demo data is never dressed as live.** Every snapshot carries `origin: 'live' | 'cache' |
-  'fixture'`, rendered in the header, on the recommendation card, and on every row of the
+'fixture'`, rendered in the header, on the recommendation card, and on every row of the
   tool trace.
-- **No chain-of-thought.** The trace records what the agent *did* — tool, redacted arguments,
+- **No chain-of-thought.** The trace records what the agent _did_ — tool, redacted arguments,
   duration, source, timestamp, result summary. No private reasoning is requested, stored or
   displayed.
 
@@ -225,14 +225,14 @@ The badge in the header always states which mode is running and why.
 
 ### Commands
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Development server |
-| `npm run build` / `npm start` | Production build and serve |
-| `npm test` | 132 unit and integration tests |
-| `npm run verify` | format + lint + typecheck + test + writeup word count + build |
-| `npm run gtfs:build` | Re-download and re-prune the METRO GTFS feed |
-| `npm run places:verify` | Re-verify downtown venues against live OpenStreetMap |
+| Command                       | What it does                                                  |
+| ----------------------------- | ------------------------------------------------------------- |
+| `npm run dev`                 | Development server                                            |
+| `npm run build` / `npm start` | Production build and serve                                    |
+| `npm test`                    | 132 unit and integration tests                                |
+| `npm run verify`              | format + lint + typecheck + test + writeup word count + build |
+| `npm run gtfs:build`          | Re-download and re-prune the METRO GTFS feed                  |
+| `npm run places:verify`       | Re-verify downtown venues against live OpenStreetMap          |
 
 ### Environment variables
 
@@ -252,7 +252,7 @@ Deployment notes are in [`docs/DEPLOY.md`](docs/DEPLOY.md).
 ## Demo modes
 
 **Reliable story demo** — three reproducible scenes anchored to Monday 2026-07-20, built on the
-real timetable so the engine does genuine arithmetic. Only the real-time *vehicle evidence* is
+real timetable so the engine does genuine arithmetic. Only the real-time _vehicle evidence_ is
 fabricated, because we cannot make METRO run a bus on cue during a recording. Every value is
 labelled demo data, and there is a "Reset scene" control.
 
@@ -305,7 +305,7 @@ before display: credential-shaped keys are masked, rider free text is replaced w
 marker, and coordinates are coarsened to roughly 100 m.
 
 Speech input, where used, is captured by the browser's own Web Speech API and sent as **text**.
-It is presented as input capture and is explicitly *not* Gemma audio input.
+It is presented as input capture and is explicitly _not_ Gemma audio input.
 
 ---
 

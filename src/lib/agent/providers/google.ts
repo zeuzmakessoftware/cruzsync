@@ -11,10 +11,15 @@
  *
  * Runs server-side only. The API key never reaches the browser.
  */
-import { SUPPORTED_GOOGLE_GEMMA_MODELS } from '@/lib/config';
-import { TOOL_DESCRIPTIONS, TOOL_NAMES, toolJsonSchema, type ToolName } from '../tools/schemas';
+import { SUPPORTED_GOOGLE_GEMMA_MODELS } from "@/lib/config";
+import {
+  TOOL_DESCRIPTIONS,
+  TOOL_NAMES,
+  toolJsonSchema,
+  type ToolName,
+} from "../tools/schemas";
 
-const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export interface GeminiPart {
   text?: string;
@@ -23,7 +28,7 @@ export interface GeminiPart {
 }
 
 export interface GeminiContent {
-  role: 'user' | 'model';
+  role: "user" | "model";
   parts: GeminiPart[];
 }
 
@@ -33,45 +38,48 @@ export interface GeminiContent {
  */
 function toGeminiSchema(schema: unknown): unknown {
   if (Array.isArray(schema)) return schema.map(toGeminiSchema);
-  if (schema === null || typeof schema !== 'object') return schema;
+  if (schema === null || typeof schema !== "object") return schema;
 
   const src = schema as Record<string, unknown>;
   const out: Record<string, unknown> = {};
   const DROP = new Set([
-    '$schema',
-    'additionalProperties',
-    'exclusiveMinimum',
-    'exclusiveMaximum',
-    'default',
-    'const',
-    'allOf',
-    'oneOf',
-    'not',
-    'if',
-    'then',
-    'else',
-    'patternProperties',
+    "$schema",
+    "additionalProperties",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "default",
+    "const",
+    "allOf",
+    "oneOf",
+    "not",
+    "if",
+    "then",
+    "else",
+    "patternProperties",
   ]);
 
   for (const [k, v] of Object.entries(src)) {
     if (DROP.has(k)) continue;
     // Nullable unions become the concrete type plus `nullable: true`.
-    if (k === 'anyOf' && Array.isArray(v)) {
+    if (k === "anyOf" && Array.isArray(v)) {
       const variants = v as Record<string, unknown>[];
-      const nonNull = variants.filter((x) => x.type !== 'null');
+      const nonNull = variants.filter((x) => x.type !== "null");
       if (nonNull.length === 1) {
-        Object.assign(out, toGeminiSchema(nonNull[0]) as Record<string, unknown>);
+        Object.assign(
+          out,
+          toGeminiSchema(nonNull[0]) as Record<string, unknown>,
+        );
         if (nonNull.length !== variants.length) out.nullable = true;
         continue;
       }
       // Genuine unions are not expressible; fall back to a permissive string.
-      out.type = 'string';
+      out.type = "string";
       continue;
     }
     out[k] = toGeminiSchema(v);
   }
   // Gemini requires an explicit type on object schemas.
-  if (out.properties && !out.type) out.type = 'object';
+  if (out.properties && !out.type) out.type = "object";
   return out;
 }
 
@@ -98,11 +106,13 @@ export interface GenerateResult {
   finishReason: string | null;
 }
 
-export async function generateContent(args: GenerateArgs): Promise<GenerateResult> {
+export async function generateContent(
+  args: GenerateArgs,
+): Promise<GenerateResult> {
   if (!SUPPORTED_GOOGLE_GEMMA_MODELS.includes(args.model as never)) {
     throw new GemmaModelUnsupportedError(
       `GEMMA_MODEL="${args.model}" is not served by the Gemini API. Supported ids: ${SUPPORTED_GOOGLE_GEMMA_MODELS.join(
-        ', ',
+        ", ",
       )}.`,
     );
   }
@@ -116,25 +126,38 @@ export async function generateContent(args: GenerateArgs): Promise<GenerateResul
     generationConfig: { temperature: 0.3, maxOutputTokens: 1400 },
   };
 
-  const res = await fetch(`${BASE}/${encodeURIComponent(args.model)}:generateContent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': args.apiKey },
-    body: JSON.stringify(body),
-    signal: args.signal ?? AbortSignal.timeout(45_000),
-  });
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(args.model)}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": args.apiKey,
+      },
+      body: JSON.stringify(body),
+      signal: args.signal ?? AbortSignal.timeout(45_000),
+    },
+  );
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Gemini API returned HTTP ${res.status}: ${text.slice(0, 400)}`);
+    throw new Error(
+      `Gemini API returned HTTP ${res.status}: ${text.slice(0, 400)}`,
+    );
   }
 
   const json = (await res.json()) as {
-    candidates?: { content?: { parts?: GeminiPart[] }; finishReason?: string }[];
+    candidates?: {
+      content?: { parts?: GeminiPart[] };
+      finishReason?: string;
+    }[];
     promptFeedback?: { blockReason?: string };
   };
 
   if (json.promptFeedback?.blockReason) {
-    throw new Error(`Request blocked by the provider: ${json.promptFeedback.blockReason}`);
+    throw new Error(
+      `Request blocked by the provider: ${json.promptFeedback.blockReason}`,
+    );
   }
 
   const candidate = json.candidates?.[0];

@@ -1,1 +1,58 @@
-[{"route_id":"11","route_short_name":"11","route_long_name":"UCSC via West Gate - High","route_color":"003d6b","route_url":"https://scmetro.org/routes/schedules/11"},{"route_id":"18","route_short_name":"18","route_long_name":"UCSC via Main Gate - Mission","route_color":"003d6b","route_url":"https://scmetro.org/routes/schedules/18"},{"route_id":"18B","route_short_name":"18B","route_long_name":"Base of UCSC via Mission","route_color":"003d6b","route_url":"https://scmetro.org/routes/schedules/18B"},{"route_id":"19","route_short_name":"19","route_long_name":"UCSC via West Gate - Bay","route_color":"003d6b","route_url":"https://scmetro.org/routes/schedules/19"},{"route_id":"19B","route_short_name":"19B","route_long_name":"Base of UCSC via Bay","route_color":"003d6b","route_url":"https://scmetro.org/routes/schedules/19B"},{"route_id":"35","route_short_name":"35","route_long_name":"Highway 9/Scotts Valley","route_color":"003d6b","route_url":"https://scmetro.org/routes/schedules/35"},{"route_id":"35B","route_short_name":"35B","route_long_name":"Scotts Valley/Big Basin","route_color":"003d6b","route_url":"https://scmetro.org/routes/schedules/35B"},{"route_id":"35X","route_short_name":"35X","route_long_name":"Santa Cruz/Boulder Creek Express","route_color":"003d6b","route_url":"https://scmetro.org/routes/schedules/35X"}]
+[
+  {
+    "route_id": "11",
+    "route_short_name": "11",
+    "route_long_name": "UCSC via West Gate - High",
+    "route_color": "003d6b",
+    "route_url": "https://scmetro.org/routes/schedules/11"
+  },
+  {
+    "route_id": "18",
+    "route_short_name": "18",
+    "route_long_name": "UCSC via Main Gate - Mission",
+    "route_color": "003d6b",
+    "route_url": "https://scmetro.org/routes/schedules/18"
+  },
+  {
+    "route_id": "18B",
+    "route_short_name": "18B",
+    "route_long_name": "Base of UCSC via Mission",
+    "route_color": "003d6b",
+    "route_url": "https://scmetro.org/routes/schedules/18B"
+  },
+  {
+    "route_id": "19",
+    "route_short_name": "19",
+    "route_long_name": "UCSC via West Gate - Bay",
+    "route_color": "003d6b",
+    "route_url": "https://scmetro.org/routes/schedules/19"
+  },
+  {
+    "route_id": "19B",
+    "route_short_name": "19B",
+    "route_long_name": "Base of UCSC via Bay",
+    "route_color": "003d6b",
+    "route_url": "https://scmetro.org/routes/schedules/19B"
+  },
+  {
+    "route_id": "35",
+    "route_short_name": "35",
+    "route_long_name": "Highway 9/Scotts Valley",
+    "route_color": "003d6b",
+    "route_url": "https://scmetro.org/routes/schedules/35"
+  },
+  {
+    "route_id": "35B",
+    "route_short_name": "35B",
+    "route_long_name": "Scotts Valley/Big Basin",
+    "route_color": "003d6b",
+    "route_url": "https://scmetro.org/routes/schedules/35B"
+  },
+  {
+    "route_id": "35X",
+    "route_short_name": "35X",
+    "route_long_name": "Santa Cruz/Boulder Creek Express",
+    "route_color": "003d6b",
+    "route_url": "https://scmetro.org/routes/schedules/35X"
+  }
+]

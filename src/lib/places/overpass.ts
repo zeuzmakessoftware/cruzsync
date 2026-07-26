@@ -7,44 +7,48 @@
  * not a defect we hide; it is surfaced as "hours unknown", and the safe-wait
  * engine refuses to green-light a visit it cannot verify.
  */
-import { agencyDayOfWeek } from '@/lib/gtfs/time';
-import { parseOpeningHours } from './hours';
-import type { PlacesProvider, Tristate, WaitPlace } from './types';
+import { agencyDayOfWeek } from "@/lib/gtfs/time";
+import { parseOpeningHours } from "./hours";
+import type { PlacesProvider, Tristate, WaitPlace } from "./types";
 
 const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.private.coffee/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
-  cafe: 'Café',
-  restaurant: 'Restaurant',
-  fast_food: 'Quick food',
-  bar: 'Bar',
-  pub: 'Pub',
-  library: 'Public library',
-  books: 'Bookshop',
-  coffee: 'Coffee shop',
-  marketplace: 'Market hall',
-  deli: 'Deli',
-  bakery: 'Bakery',
-  supermarket: 'Market',
-  community_centre: 'Community centre',
-  park: 'Public park',
-  garden: 'Public garden',
-  square: 'Public square',
-  arts_centre: 'Arts centre',
-  museum: 'Museum',
+  cafe: "Café",
+  restaurant: "Restaurant",
+  fast_food: "Quick food",
+  bar: "Bar",
+  pub: "Pub",
+  library: "Public library",
+  books: "Bookshop",
+  coffee: "Coffee shop",
+  marketplace: "Market hall",
+  deli: "Deli",
+  bakery: "Bakery",
+  supermarket: "Market",
+  community_centre: "Community centre",
+  park: "Public park",
+  garden: "Public garden",
+  square: "Public square",
+  arts_centre: "Arts centre",
+  museum: "Museum",
 };
 
 /** OSM tag -> Tristate, with absence meaning unknown rather than false. */
-function tri(value: string | undefined, truthy: string[], falsy: string[]): Tristate {
-  if (value === undefined) return 'unknown';
+function tri(
+  value: string | undefined,
+  truthy: string[],
+  falsy: string[],
+): Tristate {
+  if (value === undefined) return "unknown";
   const v = value.toLowerCase();
   if (truthy.includes(v)) return true;
   if (falsy.includes(v)) return false;
-  return 'unknown';
+  return "unknown";
 }
 
 interface OverpassElement {
@@ -56,7 +60,10 @@ interface OverpassElement {
   tags?: Record<string, string>;
 }
 
-export function mapOverpassElement(el: OverpassElement, nowMs: number): WaitPlace | null {
+export function mapOverpassElement(
+  el: OverpassElement,
+  nowMs: number,
+): WaitPlace | null {
   const tags = el.tags ?? {};
   const name = tags.name;
   if (!name) return null;
@@ -64,13 +71,14 @@ export function mapOverpassElement(el: OverpassElement, nowMs: number): WaitPlac
   const lon = el.lon ?? el.center?.lon;
   if (lat === undefined || lon === undefined) return null;
 
-  const category = tags.amenity ?? tags.shop ?? tags.leisure ?? tags.tourism ?? 'place';
-  const outdoorCategories = ['park', 'garden', 'square'];
+  const category =
+    tags.amenity ?? tags.shop ?? tags.leisure ?? tags.tourism ?? "place";
+  const outdoorCategories = ["park", "garden", "square"];
 
   const address =
-    tags['addr:housenumber'] && tags['addr:street']
-      ? `${tags['addr:housenumber']} ${tags['addr:street']}`
-      : (tags['addr:street'] ?? null);
+    tags["addr:housenumber"] && tags["addr:street"]
+      ? `${tags["addr:housenumber"]} ${tags["addr:street"]}`
+      : (tags["addr:street"] ?? null);
 
   return {
     id: `osm:${el.type}/${el.id}`,
@@ -78,36 +86,58 @@ export function mapOverpassElement(el: OverpassElement, nowMs: number): WaitPlac
     lat,
     lon,
     category,
-    categoryLabel: CATEGORY_LABELS[category] ?? category.replaceAll('_', ' '),
-    source: 'openstreetmap',
+    categoryLabel: CATEGORY_LABELS[category] ?? category.replaceAll("_", " "),
+    source: "openstreetmap",
     // OSM has no business_status equivalent we can rely on.
-    businessStatus: 'unknown',
-    website: tags.website ?? tags['contact:website'] ?? null,
+    businessStatus: "unknown",
+    website: tags.website ?? tags["contact:website"] ?? null,
     address,
-    hours: parseOpeningHours(tags.opening_hours, agencyDayOfWeek(nowMs), 'openstreetmap', nowMs),
+    hours: parseOpeningHours(
+      tags.opening_hours,
+      agencyDayOfWeek(nowMs),
+      "openstreetmap",
+      nowMs,
+    ),
 
     // Each of these comes from an explicit tag or stays unknown. There is
     // deliberately no `category === 'cafe' -> hasWifi = true` shortcut here.
-    hasWifi: tri(tags.internet_access, ['wlan', 'yes', 'wifi'], ['no']),
-    hasRestroom: tri(tags.toilets ?? tags['toilets:access'], ['yes', 'customers', 'public'], ['no']),
-    wheelchairAccessible: tri(tags.wheelchair, ['yes'], ['no']),
+    hasWifi: tri(tags.internet_access, ["wlan", "yes", "wifi"], ["no"]),
+    hasRestroom: tri(
+      tags.toilets ?? tags["toilets:access"],
+      ["yes", "customers", "public"],
+      ["no"],
+    ),
+    wheelchairAccessible: tri(tags.wheelchair, ["yes"], ["no"]),
     // Indoor-ness is the one thing an OSM *category* genuinely determines: a
     // park is not indoors. We still only assert it for unambiguous categories.
     isIndoor: outdoorCategories.includes(category)
       ? false
-      : ['cafe', 'restaurant', 'library', 'books', 'marketplace', 'bakery', 'deli', 'museum'].includes(
-            category,
-          )
+      : [
+            "cafe",
+            "restaurant",
+            "library",
+            "books",
+            "marketplace",
+            "bakery",
+            "deli",
+            "museum",
+          ].includes(category)
         ? true
-        : 'unknown',
+        : "unknown",
     // Quietness is subjective and untagged. Never guessed.
-    isQuiet: 'unknown',
-    servesFood: tri(tags.food, ['yes'], ['no']),
+    isQuiet: "unknown",
+    servesFood: tri(tags.food, ["yes"], ["no"]),
     // A library or park generally requires no purchase; anything else is unknown.
-    freeToEnter: ['library', 'park', 'garden', 'square', 'community_centre'].includes(category)
+    freeToEnter: [
+      "library",
+      "park",
+      "garden",
+      "square",
+      "community_centre",
+    ].includes(category)
       ? true
-      : 'unknown',
-    locallyOwned: tags.brand || tags['brand:wikidata'] ? false : 'unknown',
+      : "unknown",
+    locallyOwned: tags.brand || tags["brand:wikidata"] ? false : "unknown",
     priceLevel: null,
     sponsored: false,
   };
@@ -131,7 +161,7 @@ out center tags 50;`;
 }
 
 export class OverpassProvider implements PlacesProvider {
-  readonly name = 'openstreetmap' as const;
+  readonly name = "openstreetmap" as const;
 
   constructor(private readonly nowMs: () => number = () => Date.now()) {}
 
@@ -151,8 +181,8 @@ export class OverpassProvider implements PlacesProvider {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({ data: body }).toString(),
             signal: AbortSignal.timeout(40_000),
           });

@@ -1,6 +1,6 @@
 /** Normalised GTFS-Realtime types. Nothing protobuf-shaped escapes the server. */
 
-export type FreshnessLabel = 'fresh' | 'stale' | 'expired';
+export type FreshnessLabel = "fresh" | "stale" | "expired";
 
 export interface Freshness {
   /** When CruzSync fetched the feed. */
@@ -82,8 +82,13 @@ export interface RealtimeSnapshot {
   alerts: NormalisedAlert[];
   freshness: Freshness;
   /** 'live' = fetched from METRO now. 'cache' = last good copy. 'fixture' = demo data. */
-  origin: 'live' | 'cache' | 'fixture';
+  origin: "live" | "cache" | "fixture";
   /** Populated when we degraded, so the UI can say exactly what went wrong. */
   degradedReason?: string;
-  sources: { name: string; url: string; ok: boolean; fetchedAtMs: number | null }[];
+  sources: {
+    name: string;
+    url: string;
+    ok: boolean;
+    fetchedAtMs: number | null;
+  }[];
 }

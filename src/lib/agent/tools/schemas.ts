@@ -11,12 +11,16 @@
  * as `functionDeclarations`, so the model's contract and our validation can
  * never drift apart.
  */
-import { z } from 'zod';
-import { CAMPUS_ROUTE_IDS } from '@/lib/domain';
+import { z } from "zod";
+import { CAMPUS_ROUTE_IDS } from "@/lib/domain";
 
-const routeId = z.string().min(1).max(8).describe('Santa Cruz METRO route id, e.g. "35", "11".');
-const stopId = z.string().min(1).max(16).describe('GTFS stop_id.');
-const tripId = z.string().min(1).max(24).describe('GTFS trip_id.');
+const routeId = z
+  .string()
+  .min(1)
+  .max(8)
+  .describe('Santa Cruz METRO route id, e.g. "35", "11".');
+const stopId = z.string().min(1).max(16).describe("GTFS stop_id.");
+const tripId = z.string().min(1).max(24).describe("GTFS trip_id.");
 
 const campusRouteId = z.enum(CAMPUS_ROUTE_IDS);
 
@@ -42,7 +46,7 @@ export const riderPreferencesSchema = z
     preferLocallyOwned: z.boolean().default(false),
   })
   .partial()
-  .describe('Rider preferences. Omit fields the rider has not mentioned.');
+  .describe("Rider preferences. Omit fields the rider has not mentioned.");
 
 export const placeFiltersSchema = z
   .object({
@@ -87,7 +91,7 @@ export const toolArgSchemas = {
       .string()
       .regex(/^\d{8}$/)
       .optional()
-      .describe('YYYYMMDD. Defaults to the current service day.'),
+      .describe("YYYYMMDD. Defaults to the current service day."),
     timeWindowMinutes: z.number().int().min(5).max(720).default(90),
     routeIds: z.array(routeId).max(8).optional(),
     directionId: z
@@ -97,17 +101,27 @@ export const toolArgSchemas = {
       .max(1)
       .optional()
       .describe(
-        'Required for Route 35 at RiverFront Area 2, where inbound and outbound trips share one stop. 0 = outbound toward Scotts Valley, 1 = inbound to downtown. Omitting it mixes both directions and produces a meaningless headway.',
+        "Required for Route 35 at RiverFront Area 2, where inbound and outbound trips share one stop. 0 = outbound toward Scotts Valley, 1 = inbound to downtown. Omitting it mixes both directions and produces a meaningless headway.",
       ),
   }),
 
   build_multileg_trip: z.object({
-    originStopId: stopId.optional().describe('Where the rider boards Route 35. Defaults to Scotts Valley.'),
+    originStopId: stopId
+      .optional()
+      .describe("Where the rider boards Route 35. Defaults to Scotts Valley."),
     destinationKey: z
       .string()
-      .describe('Campus destination key, e.g. "science-hill", "crown-merrill", "kerr-hall".'),
-    departureTime: z.string().datetime().optional().describe('ISO 8601. Defaults to now.'),
-    route35TripId: tripId.optional().describe('The Route 35 trip the rider is already on, if known.'),
+      .describe(
+        'Campus destination key, e.g. "science-hill", "crown-merrill", "kerr-hall".',
+      ),
+    departureTime: z
+      .string()
+      .datetime()
+      .optional()
+      .describe("ISO 8601. Defaults to now."),
+    route35TripId: tripId
+      .optional()
+      .describe("The Route 35 trip the rider is already on, if known."),
     preferences: riderPreferencesSchema.optional(),
   }),
 
@@ -121,9 +135,13 @@ export const toolArgSchemas = {
   compare_ucsc_options: z.object({
     downtownStopId: stopId
       .optional()
-      .describe('Defaults to RiverFront Area 1, where Routes 11/18/19 depart.'),
-    campusDestination: z.string().describe('Campus destination key.'),
-    candidateRouteIds: z.array(campusRouteId).min(1).max(3).default(['11', '18', '19']),
+      .describe("Defaults to RiverFront Area 1, where Routes 11/18/19 depart."),
+    campusDestination: z.string().describe("Campus destination key."),
+    candidateRouteIds: z
+      .array(campusRouteId)
+      .min(1)
+      .max(3)
+      .default(["11", "18", "19"]),
     earliestAtArea1: z.string().datetime().optional(),
     preferences: riderPreferencesSchema.optional(),
   }),
@@ -154,7 +172,7 @@ export const toolArgSchemas = {
   }),
 
   recommend_next_action: z.object({
-    direction: z.enum(['to-campus', 'to-home']),
+    direction: z.enum(["to-campus", "to-home"]),
     destinationKey: z.string().optional(),
     preferences: riderPreferencesSchema.optional(),
     considerWaitPlaces: z.boolean().default(true),
@@ -173,7 +191,7 @@ const freshnessSchema = z.object({
   fetchedAtMs: z.number(),
   feedTimestampMs: z.number().nullable(),
   ageSeconds: z.number(),
-  label: z.enum(['fresh', 'stale', 'expired']),
+  label: z.enum(["fresh", "stale", "expired"]),
 });
 
 /** Present on every tool result so the model can cite its sources honestly. */
@@ -192,13 +210,13 @@ const waitPlaceSchema = z.object({
   summary: z.string(),
   reasons: z.array(z.string()),
   blockedReasons: z.array(z.string()),
-  amenities: z.record(z.string(), z.union([z.boolean(), z.literal('unknown')])),
+  amenities: z.record(z.string(), z.union([z.boolean(), z.literal("unknown")])),
   sponsored: z.boolean(),
 });
 
 const provenanceSchema = z.object({
   source: z.string(),
-  origin: z.enum(['live', 'cache', 'fixture']),
+  origin: z.enum(["live", "cache", "fixture"]),
   observedAtIso: z.string().nullable(),
   freshness: freshnessSchema.nullable(),
   engineVersion: z.string().optional(),
@@ -208,11 +226,13 @@ const evidenceSchema = z.object({
   routeId: z.string(),
   tripId: z.string(),
   stopId: z.string(),
-  label: z.enum(['observed', 'reported', 'scheduled-only', 'stale', 'blocked']),
+  label: z.enum(["observed", "reported", "scheduled-only", "stale", "blocked"]),
   confidence: z.number(),
   confidenceIsCalibrated: z
     .literal(false)
-    .describe('Always false. This is an inspectable heuristic, not a probability.'),
+    .describe(
+      "Always false. This is an inspectable heuristic, not a probability.",
+    ),
   vehicleVisible: z.boolean(),
   vehicleAgeSeconds: z.number().nullable(),
   scheduleDeviationSec: z.number().nullable(),
@@ -220,10 +240,21 @@ const evidenceSchema = z.object({
   scheduledDepartureIso: z.string(),
   predictedDepartureIso: z.string(),
   signals: z.array(
-    z.object({ key: z.string(), detail: z.string(), weight: z.number(), source: z.string() }),
+    z.object({
+      key: z.string(),
+      detail: z.string(),
+      weight: z.number(),
+      source: z.string(),
+    }),
   ),
   caveats: z.array(z.string()),
-  activeAlerts: z.array(z.object({ id: z.string(), header: z.string().nullable(), effect: z.string().nullable() })),
+  activeAlerts: z.array(
+    z.object({
+      id: z.string(),
+      header: z.string().nullable(),
+      effect: z.string().nullable(),
+    }),
+  ),
 });
 
 export const toolResultSchemas = {
@@ -303,7 +334,7 @@ export const toolResultSchemas = {
     provenance: provenanceSchema,
     legs: z.array(
       z.object({
-        kind: z.enum(['bus', 'walk']),
+        kind: z.enum(["bus", "walk"]),
         routeId: z.string().optional(),
         label: z.string(),
         fromStopName: z.string(),
@@ -341,7 +372,11 @@ export const toolResultSchemas = {
         transferMarginSec: z.number().nullable(),
         arrivalRange: z.tuple([z.string(), z.string()]).optional(),
         scoreBreakdown: z.array(
-          z.object({ factor: z.string(), detail: z.string(), penaltySec: z.number() }),
+          z.object({
+            factor: z.string(),
+            detail: z.string(),
+            penaltySec: z.number(),
+          }),
         ),
         blockedReasons: z.array(z.string()),
         evidence: evidenceSchema.optional(),
@@ -372,8 +407,13 @@ export const toolResultSchemas = {
         businessStatus: z.string(),
         hoursKnown: z.boolean(),
         hoursRaw: z.string().nullable(),
-        todayWindows: z.array(z.object({ opens: z.string(), closes: z.string() })),
-        amenities: z.record(z.string(), z.union([z.boolean(), z.literal('unknown')])),
+        todayWindows: z.array(
+          z.object({ opens: z.string(), closes: z.string() }),
+        ),
+        amenities: z.record(
+          z.string(),
+          z.union([z.boolean(), z.literal("unknown")]),
+        ),
       })
       .nullable(),
   }),
@@ -398,13 +438,13 @@ export const toolResultSchemas = {
   recommend_next_action: z.object({
     provenance: provenanceSchema,
     action: z.enum([
-      'CATCH ROUTE 35',
-      'TRANSFER TO 11',
-      'TRANSFER TO 18',
-      'TRANSFER TO 19',
-      'WAIT AT STOP',
-      'WAIT AT A PLACE',
-      'DATA TOO UNCERTAIN',
+      "CATCH ROUTE 35",
+      "TRANSFER TO 11",
+      "TRANSFER TO 18",
+      "TRANSFER TO 19",
+      "WAIT AT STOP",
+      "WAIT AT A PLACE",
+      "DATA TOO UNCERTAIN",
     ]),
     headline: z.string(),
     subhead: z.string(),
@@ -428,32 +468,34 @@ export const toolResultSchemas = {
 
 /** The JSON Schema handed to Gemma. Generated from the same Zod definitions. */
 export function toolJsonSchema(name: ToolName): Record<string, unknown> {
-  return z.toJSONSchema(toolArgSchemas[name], { io: 'input', target: 'draft-7' }) as Record<
-    string,
-    unknown
-  >;
+  return z.toJSONSchema(toolArgSchemas[name], {
+    io: "input",
+    target: "draft-7",
+  }) as Record<string, unknown>;
 }
 
 export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
   get_vehicle_positions:
-    'Current GTFS-Realtime vehicle positions from Santa Cruz METRO. Absence of a vehicle means no position is being published; it does NOT mean the trip is cancelled.',
+    "Current GTFS-Realtime vehicle positions from Santa Cruz METRO. Absence of a vehicle means no position is being published; it does NOT mean the trip is cancelled.",
   get_trip_updates:
-    'GTFS-Realtime trip updates including delay and schedule relationship. Only this feed can tell you a trip is genuinely cancelled.',
-  get_service_alerts: 'Active GTFS-Realtime service alerts affecting a route or stop.',
+    "GTFS-Realtime trip updates including delay and schedule relationship. Only this feed can tell you a trip is genuinely cancelled.",
+  get_service_alerts:
+    "Active GTFS-Realtime service alerts affecting a route or stop.",
   get_stop_schedule:
-    'Scheduled departures from a stop for the active service day, plus the computed headway. Use this rather than guessing frequencies.',
+    "Scheduled departures from a stop for the active service day, plus the computed headway. Use this rather than guessing frequencies.",
   build_multileg_trip:
-    'Builds the full journey: Route 35 into RiverFront Area 2, the walk to Area 1, then a campus route to the destination. Returns transfer margin and arrival range.',
+    "Builds the full journey: Route 35 into RiverFront Area 2, the walk to Area 1, then a campus route to the destination. Returns transfer margin and arrival range.",
   analyze_route_evidence:
-    'Scores how much is actually known about one scheduled trip at one stop, returning the contributing signals.',
+    "Scores how much is actually known about one scheduled trip at one stop, returning the contributing signals.",
   compare_ucsc_options:
-    'Ranks Routes 11, 18 and 19 for the downtown-to-campus leg only. Route 35 is never a candidate here — it is the other leg of the journey.',
+    "Ranks Routes 11, 18 and 19 for the downtown-to-campus leg only. Route 35 is never a candidate here — it is the other leg of the journey.",
   get_nearby_wait_places:
-    'Finds places near a boarding stop where the rider could usefully spend a wait, with feasibility already computed. Only feasible places should be recommended.',
-  get_place_details: 'Detailed record for one place, including opening hours and what is unknown.',
-  get_walking_time: 'Walking time from a place back to a boarding stop.',
+    "Finds places near a boarding stop where the rider could usefully spend a wait, with feasibility already computed. Only feasible places should be recommended.",
+  get_place_details:
+    "Detailed record for one place, including opening hours and what is unknown.",
+  get_walking_time: "Walking time from a place back to a boarding stop.",
   calculate_safe_wait:
-    'Computes leave-by time and usable wait from a predicted departure and a walking time. Always use this instead of doing the arithmetic yourself.',
+    "Computes leave-by time and usable wait from a predicted departure and a walking time. Always use this instead of doing the arithmetic yourself.",
   recommend_next_action:
-    'Produces the final structured recommendation. Call this last, after gathering evidence.',
+    "Produces the final structured recommendation. Call this last, after gathering evidence.",
 };

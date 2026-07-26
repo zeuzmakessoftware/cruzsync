@@ -40,20 +40,20 @@ a hundred metres apart.
 
 ## 0:12–0:30 — Ask, and watch Gemma work
 
-Click the first suggestion chip: *"I'm on the 35 from Scotts Valley. Which bus should I transfer
-to for campus?"*
+Click the first suggestion chip: _"I'm on the 35 from Scotts Valley. Which bus should I transfer
+to for campus?"_
 
 > "Gemma calls transit tools — it doesn't guess. It builds the journey, then compares the
 > campus routes using the same transfer time."
 
 **On screen:** the recommendation card appears — **35 → RiverFront · then take the 11**, with
-*Route 11 vehicle updated 34s ago* and a live countdown.
+_Route 11 vehicle updated 34s ago_ and a live countdown.
 
 ---
 
 ## 0:30–0:45 — Why the 11, and when it isn't
 
-Scroll to **11 vs 18 vs 19**. Expand *"Why it scored…"* on the 11.
+Scroll to **11 vs 18 vs 19**. Expand _"Why it scored…"_ on the 11.
 
 > "Every term is in seconds, so I can read the reasoning. The 11 wins on arrival time. My saved
 > note that it feels less crowded is worth ninety seconds — it breaks ties, it can't overrule a
@@ -74,8 +74,8 @@ Click scene **"Evening: 48 minutes downtown before the 35."**
 > "Going home, the 35 drops to hourly after eight. That's a 48-minute hole — and that number
 > comes from the real timetable, not from me."
 
-Click the suggestion chip: *"The next 35 is ages away — where can I hang out without missing
-it?"*
+Click the suggestion chip: _"The next 35 is ages away — where can I hang out without missing
+it?"_
 
 ---
 
@@ -118,13 +118,13 @@ Scroll to the civic panel.
 
 ## Fallbacks if something misbehaves
 
-| If | Do |
-|---|---|
-| The agent call is slow | Keep talking over it; the tool trace appearing *is* the story |
+| If                         | Do                                                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The agent call is slow     | Keep talking over it; the tool trace appearing _is_ the story                                                                                      |
 | Live Gemma errors mid-take | Don't cut. The card says "Gemma failed — deterministic fallback" and the recommendation is unchanged. Say that out loud: it's the resilience point |
-| Map tiles are slow | They're OpenStreetMap tiles over the network. Pre-load the page once before recording so they're cached |
-| A countdown reaches zero | Click **Reset scene** and re-take from the scene boundary |
-| You want live data | Untick "Demo story" — but don't script around it; live METRO may legitimately have nothing useful at that moment, and CruzSync will say so |
+| Map tiles are slow         | They're OpenStreetMap tiles over the network. Pre-load the page once before recording so they're cached                                            |
+| A countdown reaches zero   | Click **Reset scene** and re-take from the scene boundary                                                                                          |
+| You want live data         | Untick "Demo story" — but don't script around it; live METRO may legitimately have nothing useful at that moment, and CruzSync will say so         |
 
 ## Recording checklist
 

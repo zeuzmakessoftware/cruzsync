@@ -24,14 +24,21 @@
  *     21:00 -- the evening headway genuinely degrades from 30 to 60 minutes in
  *     the real timetable, producing a ~48 minute wait with no invention required.
  */
-import { serviceDateTimeToEpochMs } from '@/lib/gtfs/time';
-import type { NormalisedAlert, NormalisedTripUpdate, NormalisedVehicle, RealtimeSnapshot } from '@/lib/rt/types';
+import { serviceDateTimeToEpochMs } from "@/lib/gtfs/time";
+import type {
+  NormalisedAlert,
+  NormalisedTripUpdate,
+  NormalisedVehicle,
+  RealtimeSnapshot,
+} from "@/lib/rt/types";
 
-export const DEMO_SERVICE_DATE = '20260720';
+export const DEMO_SERVICE_DATE = "20260720";
 
-const at = (h: number, m: number) => serviceDateTimeToEpochMs(DEMO_SERVICE_DATE, h * 3600 + m * 60);
+const at = (h: number, m: number) =>
+  serviceDateTimeToEpochMs(DEMO_SERVICE_DATE, h * 3600 + m * 60);
 
-export type SceneId = 'outbound-11-wins' | 'outbound-11-ghost' | 'return-long-wait';
+export type SceneId =
+  "outbound-11-wins" | "outbound-11-ghost" | "return-long-wait";
 
 export interface DemoScene {
   id: SceneId;
@@ -40,13 +47,17 @@ export interface DemoScene {
   narrative: string;
   /** The fixed clock this scene starts at. */
   anchorMs: number;
-  direction: 'to-campus' | 'to-home';
+  direction: "to-campus" | "to-home";
   /** Default campus destination for the scene. */
   campusDestinationKey: string;
   build: (nowMs: number) => RealtimeSnapshot;
 }
 
-function vehicle(v: Partial<NormalisedVehicle> & { tripId: string; routeId: string }, nowMs: number, ageSeconds: number): NormalisedVehicle {
+function vehicle(
+  v: Partial<NormalisedVehicle> & { tripId: string; routeId: string },
+  nowMs: number,
+  ageSeconds: number,
+): NormalisedVehicle {
   return {
     vehicleId: null,
     label: null,
@@ -57,7 +68,7 @@ function vehicle(v: Partial<NormalisedVehicle> & { tripId: string; routeId: stri
     speedMps: null,
     currentStopId: null,
     currentStopSequence: null,
-    currentStatus: 'IN_TRANSIT_TO',
+    currentStatus: "IN_TRANSIT_TO",
     occupancyStatus: null,
     ...v,
     timestampMs: nowMs - ageSeconds * 1000,
@@ -71,7 +82,7 @@ function tripUpdate(
   delaySec: number,
   nowMs: number,
   ageSeconds: number,
-  stopTimeUpdates: NormalisedTripUpdate['stopTimeUpdates'] = [],
+  stopTimeUpdates: NormalisedTripUpdate["stopTimeUpdates"] = [],
 ): NormalisedTripUpdate {
   return {
     tripId,
@@ -81,7 +92,7 @@ function tripUpdate(
     vehicleId: null,
     timestampMs: nowMs - ageSeconds * 1000,
     delaySec,
-    scheduleRelationship: 'SCHEDULED',
+    scheduleRelationship: "SCHEDULED",
     stopTimeUpdates,
   };
 }
@@ -96,45 +107,77 @@ function snapshot(
     vehicles,
     tripUpdates,
     alerts,
-    freshness: { fetchedAtMs: nowMs, feedTimestampMs: nowMs - 8000, ageSeconds: 8, label: 'fresh' },
-    origin: 'fixture',
+    freshness: {
+      fetchedAtMs: nowMs,
+      feedTimestampMs: nowMs - 8000,
+      ageSeconds: 8,
+      label: "fresh",
+    },
+    origin: "fixture",
     degradedReason: undefined,
     sources: [
-      { name: 'vehicles', url: 'demo fixture', ok: true, fetchedAtMs: nowMs },
-      { name: 'trips', url: 'demo fixture', ok: true, fetchedAtMs: nowMs },
-      { name: 'alerts', url: 'demo fixture', ok: true, fetchedAtMs: nowMs },
+      { name: "vehicles", url: "demo fixture", ok: true, fetchedAtMs: nowMs },
+      { name: "trips", url: "demo fixture", ok: true, fetchedAtMs: nowMs },
+      { name: "alerts", url: "demo fixture", ok: true, fetchedAtMs: nowMs },
     ],
   };
 }
 
 export const DEMO_SCENES: DemoScene[] = [
   {
-    id: 'outbound-11-wins',
-    title: 'Morning: which bus do I take at RiverFront?',
+    id: "outbound-11-wins",
+    title: "Morning: which bus do I take at RiverFront?",
     narrative:
       "I'm on the 35 coming down Highway 9. It gets me to RiverFront Area 2 around 8:10. From Area 2 I still have to walk over to Area 1 and pick the 11, the 18 or the 19 to get to Science Hill.",
     anchorMs: at(8, 3),
-    direction: 'to-campus',
-    campusDestinationKey: 'science-hill',
+    direction: "to-campus",
+    campusDestinationKey: "science-hill",
     build: (nowMs) =>
       snapshot(
         nowMs,
         [
           // The 35 the rider is physically on, running two minutes late.
           vehicle(
-            { tripId: '56020', routeId: '35', vehicleId: '1841', lat: 37.0102, lon: -122.0512, speedMps: 12.1, bearing: 190, occupancyStatus: 'MANY_SEATS_AVAILABLE' },
+            {
+              tripId: "56020",
+              routeId: "35",
+              vehicleId: "1841",
+              lat: 37.0102,
+              lon: -122.0512,
+              speedMps: 12.1,
+              bearing: 190,
+              occupancyStatus: "MANY_SEATS_AVAILABLE",
+            },
             nowMs,
             18,
           ),
           // Route 11 has a live, recent position -- this is what earns it the recommendation.
           vehicle(
-            { tripId: '2147020', routeId: '11', vehicleId: '1211', lat: 36.9761, lon: -122.0261, speedMps: 0, bearing: 95, occupancyStatus: 'MANY_SEATS_AVAILABLE' },
+            {
+              tripId: "2147020",
+              routeId: "11",
+              vehicleId: "1211",
+              lat: 36.9761,
+              lon: -122.0261,
+              speedMps: 0,
+              bearing: 95,
+              occupancyStatus: "MANY_SEATS_AVAILABLE",
+            },
             nowMs,
             34,
           ),
           // Route 19's bus is visible too, just further out and later.
           vehicle(
-            { tripId: '214020', routeId: '19', vehicleId: '0322', lat: 36.9805, lon: -122.0301, speedMps: 8.4, bearing: 140, occupancyStatus: 'FEW_SEATS_AVAILABLE' },
+            {
+              tripId: "214020",
+              routeId: "19",
+              vehicleId: "0322",
+              lat: 36.9805,
+              lon: -122.0301,
+              speedMps: 8.4,
+              bearing: 140,
+              occupancyStatus: "FEW_SEATS_AVAILABLE",
+            },
             nowMs,
             41,
           ),
@@ -143,23 +186,23 @@ export const DEMO_SCENES: DemoScene[] = [
           // cancellation.
         ],
         [
-          tripUpdate('56020', '35', 120, nowMs, 22),
-          tripUpdate('2147020', '11', 0, nowMs, 30),
-          tripUpdate('214020', '19', 60, nowMs, 45),
+          tripUpdate("56020", "35", 120, nowMs, 22),
+          tripUpdate("2147020", "11", 0, nowMs, 30),
+          tripUpdate("214020", "19", 60, nowMs, 45),
         ],
         [],
       ),
   },
   {
-    id: 'outbound-11-ghost',
-    title: 'Morning, harder: the 11 never turned up',
+    id: "outbound-11-ghost",
+    title: "Morning, harder: the 11 never turned up",
     narrative:
       "This is the gamble I actually live with. It's 8:22 and the 8:20 eleven simply never appeared -- no bus, no position, nothing. The next 11 isn't until 8:50. Do I keep waiting for the route I prefer, or take the 19 that I can actually see?",
     // Two minutes AFTER the 08:20 Route 11 was due. Nothing was ever published
     // for it, which is exactly what a ghost bus looks like in GTFS-Realtime.
     anchorMs: at(8, 22),
-    direction: 'to-campus',
-    campusDestinationKey: 'science-hill',
+    direction: "to-campus",
+    campusDestinationKey: "science-hill",
     build: (nowMs) =>
       snapshot(
         nowMs,
@@ -167,13 +210,31 @@ export const DEMO_SCENES: DemoScene[] = [
           // The rider has already arrived downtown on the 35.
           // Route 19's 08:29 departure is visible and close.
           vehicle(
-            { tripId: '214020', routeId: '19', vehicleId: '0322', lat: 36.9788, lon: -122.0269, speedMps: 6.2, bearing: 140, occupancyStatus: 'FEW_SEATS_AVAILABLE' },
+            {
+              tripId: "214020",
+              routeId: "19",
+              vehicleId: "0322",
+              lat: 36.9788,
+              lon: -122.0269,
+              speedMps: 6.2,
+              bearing: 140,
+              occupancyStatus: "FEW_SEATS_AVAILABLE",
+            },
             nowMs,
             22,
           ),
           // The 08:45 Route 18 is also out there, further away.
           vehicle(
-            { tripId: '1439020', routeId: '18', vehicleId: '0121', lat: 36.9942, lon: -122.0585, speedMps: 9.1, bearing: 210, occupancyStatus: 'MANY_SEATS_AVAILABLE' },
+            {
+              tripId: "1439020",
+              routeId: "18",
+              vehicleId: "0121",
+              lat: 36.9942,
+              lon: -122.0585,
+              speedMps: 9.1,
+              bearing: 210,
+              occupancyStatus: "MANY_SEATS_AVAILABLE",
+            },
             nowMs,
             37,
           ),
@@ -183,20 +244,20 @@ export const DEMO_SCENES: DemoScene[] = [
           // cancellation -- the feed has not said the trip was cancelled.
         ],
         [
-          tripUpdate('214020', '19', 60, nowMs, 26),
-          tripUpdate('1439020', '18', 0, nowMs, 41),
+          tripUpdate("214020", "19", 60, nowMs, 26),
+          tripUpdate("1439020", "18", 0, nowMs, 41),
         ],
         [],
       ),
   },
   {
-    id: 'return-long-wait',
-    title: 'Evening: 48 minutes downtown before the 35',
+    id: "return-long-wait",
+    title: "Evening: 48 minutes downtown before the 35",
     narrative:
       "I'm back at RiverFront Area 3 at 8:12 in the evening. The 35 home doesn't leave Area 2 until 9:00 because the evening service drops to hourly. That's the dead time I want back.",
     anchorMs: at(20, 12),
-    direction: 'to-home',
-    campusDestinationKey: 'science-hill',
+    direction: "to-home",
+    campusDestinationKey: "science-hill",
     build: (nowMs) =>
       snapshot(
         nowMs,
@@ -204,12 +265,21 @@ export const DEMO_SCENES: DemoScene[] = [
           // The 21:00 Route 35 hasn't been assigned a visible vehicle yet -- normal
           // this far ahead of departure, and CruzSync says so rather than guessing.
           vehicle(
-            { tripId: '1062020', routeId: '35', vehicleId: '1511', lat: 37.0402, lon: -122.0221, speedMps: 9.7, bearing: 20, occupancyStatus: 'MANY_SEATS_AVAILABLE' },
+            {
+              tripId: "1062020",
+              routeId: "35",
+              vehicleId: "1511",
+              lat: 37.0402,
+              lon: -122.0221,
+              speedMps: 9.7,
+              bearing: 20,
+              occupancyStatus: "MANY_SEATS_AVAILABLE",
+            },
             nowMs,
             25,
           ),
         ],
-        [tripUpdate('892020', '35', 0, nowMs, 55)],
+        [tripUpdate("892020", "35", 0, nowMs, 55)],
         [],
       ),
   },
@@ -219,4 +289,4 @@ export function getScene(id: string): DemoScene | undefined {
   return DEMO_SCENES.find((s) => s.id === id);
 }
 
-export const DEFAULT_SCENE_ID: SceneId = 'outbound-11-wins';
+export const DEFAULT_SCENE_ID: SceneId = "outbound-11-wins";

@@ -10,9 +10,10 @@
  * person having a bad evening. So anything we have not actually sourced is
  * `'unknown'`, and the UI renders that as "unknown", never as a quiet absence.
  */
-export type Tristate = true | false | 'unknown';
+export type Tristate = true | false | "unknown";
 
-export type PlaceSource = 'openstreetmap' | 'google-places' | 'verified-fixture';
+export type PlaceSource =
+  "openstreetmap" | "google-places" | "verified-fixture";
 
 export interface OpeningHours {
   /** Raw upstream value, kept verbatim for auditing. */
@@ -40,7 +41,8 @@ export interface WaitPlace {
   categoryLabel: string;
   source: PlaceSource;
   /** Present when the upstream provider reports it. */
-  businessStatus: 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY' | 'unknown';
+  businessStatus:
+    "OPERATIONAL" | "CLOSED_TEMPORARILY" | "CLOSED_PERMANENTLY" | "unknown";
   website: string | null;
   address: string | null;
   hours: OpeningHours | null;
@@ -67,7 +69,7 @@ export interface WalkEstimate {
   metres: number;
   /** False only when a real walking-route provider produced this. */
   estimated: boolean;
-  provider: 'haversine-estimate' | 'google-routes';
+  provider: "haversine-estimate" | "google-routes";
 }
 
 /** A place that has passed the deterministic feasibility check. */
@@ -122,7 +124,12 @@ export const NO_FILTERS: PlaceFilters = {
 export interface PlacesProvider {
   readonly name: PlaceSource;
   /** Places near a point, within `radiusMetres`. */
-  search(args: { lat: number; lon: number; radiusMetres: number; limit: number }): Promise<WaitPlace[]>;
+  search(args: {
+    lat: number;
+    lon: number;
+    radiusMetres: number;
+    limit: number;
+  }): Promise<WaitPlace[]>;
   /** Richer detail for one place, when the provider supports it. */
   details?(id: string): Promise<WaitPlace | null>;
 }

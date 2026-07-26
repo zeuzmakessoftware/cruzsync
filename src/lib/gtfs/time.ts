@@ -12,25 +12,32 @@
  *  2. The feed is in America/Los_Angeles, which observes DST. We resolve the
  *     real UTC offset for each instant via Intl rather than assuming -08:00.
  */
-import { AGENCY_TIMEZONE } from '@/lib/domain';
+import { AGENCY_TIMEZONE } from "@/lib/domain";
 
 /** Offset in ms that must be ADDED to UTC to get local time at `instant`. */
 function tzOffsetMs(instant: Date, timeZone = AGENCY_TIMEZONE): number {
-  const dtf = new Intl.DateTimeFormat('en-US', {
+  const dtf = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   });
   const parts = dtf.formatToParts(instant);
   const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
   // Intl renders midnight as hour 24 in some ICU versions; normalise it.
-  const hour = get('hour') % 24;
-  const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), hour, get('minute'), get('second'));
+  const hour = get("hour") % 24;
+  const asUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    hour,
+    get("minute"),
+    get("second"),
+  );
   return asUtc - instant.getTime();
 }
 
@@ -63,30 +70,42 @@ export function formatGtfsTime(seconds: number): string {
   const s = ((seconds % 86400) + 86400) % 86400;
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 /** YYYYMMDD for the given instant, as seen in the agency timezone. */
-export function agencyDateString(instant: Date | number, timeZone = AGENCY_TIMEZONE): string {
-  const d = typeof instant === 'number' ? new Date(instant) : instant;
-  const dtf = new Intl.DateTimeFormat('en-CA', {
+export function agencyDateString(
+  instant: Date | number,
+  timeZone = AGENCY_TIMEZONE,
+): string {
+  const d = typeof instant === "number" ? new Date(instant) : instant;
+  const dtf = new Intl.DateTimeFormat("en-CA", {
     timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
-  return dtf.format(d).replaceAll('-', '');
+  return dtf.format(d).replaceAll("-", "");
 }
 
 /** Day of week 0=Sunday..6=Saturday, as seen in the agency timezone. */
-export function agencyDayOfWeek(instant: Date | number, timeZone = AGENCY_TIMEZONE): number {
-  const d = typeof instant === 'number' ? new Date(instant) : instant;
-  const name = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(d);
-  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(name);
+export function agencyDayOfWeek(
+  instant: Date | number,
+  timeZone = AGENCY_TIMEZONE,
+): number {
+  const d = typeof instant === "number" ? new Date(instant) : instant;
+  const name = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+  }).format(d);
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(name);
 }
 
 /** Epoch ms for `secondsAfterMidnight` on the given YYYYMMDD service date. */
-export function serviceDateTimeToEpochMs(serviceDate: string, secondsAfterMidnight: number): number {
+export function serviceDateTimeToEpochMs(
+  serviceDate: string,
+  secondsAfterMidnight: number,
+): number {
   const year = Number(serviceDate.slice(0, 4));
   const month = Number(serviceDate.slice(4, 6));
   const day = Number(serviceDate.slice(6, 8));
@@ -100,17 +119,20 @@ export function shiftServiceDate(serviceDate: string, days: number): string {
   const day = Number(serviceDate.slice(6, 8));
   const d = new Date(Date.UTC(year, month - 1, day));
   d.setUTCDate(d.getUTCDate() + days);
-  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(
+  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(
     d.getUTCDate(),
-  ).padStart(2, '0')}`;
+  ).padStart(2, "0")}`;
 }
 
 /** Human-friendly clock time in the agency timezone, e.g. "2:14 PM". */
-export function formatClock(epochMs: number, timeZone = AGENCY_TIMEZONE): string {
-  return new Intl.DateTimeFormat('en-US', {
+export function formatClock(
+  epochMs: number,
+  timeZone = AGENCY_TIMEZONE,
+): string {
+  return new Intl.DateTimeFormat("en-US", {
     timeZone,
-    hour: 'numeric',
-    minute: '2-digit',
+    hour: "numeric",
+    minute: "2-digit",
     hour12: true,
   }).format(new Date(epochMs));
 }

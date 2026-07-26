@@ -6,9 +6,13 @@
  * truth. Demo fixtures are never relabelled as live, and a live fetch failure
  * never silently becomes a fixture without `degradedReason` saying so.
  */
-import { getScene, DEFAULT_SCENE_ID } from '@fixtures/scenes';
-import { fetchRealtimeSnapshot, getCachedSnapshot, RealtimeUnavailableError } from './fetch';
-import type { RealtimeSnapshot } from './types';
+import { getScene, DEFAULT_SCENE_ID } from "@fixtures/scenes";
+import {
+  fetchRealtimeSnapshot,
+  getCachedSnapshot,
+  RealtimeUnavailableError,
+} from "./fetch";
+import type { RealtimeSnapshot } from "./types";
 
 export interface SnapshotRequest {
   /** Force demo fixtures regardless of config. */
@@ -26,9 +30,12 @@ export interface SnapshotResult {
   sceneId?: string;
 }
 
-export async function getSnapshot(req: SnapshotRequest = {}): Promise<SnapshotResult> {
+export async function getSnapshot(
+  req: SnapshotRequest = {},
+): Promise<SnapshotResult> {
   if (req.demo) {
-    const scene = getScene(req.sceneId ?? DEFAULT_SCENE_ID) ?? getScene(DEFAULT_SCENE_ID)!;
+    const scene =
+      getScene(req.sceneId ?? DEFAULT_SCENE_ID) ?? getScene(DEFAULT_SCENE_ID)!;
     const nowMs = req.nowMs ?? scene.anchorMs;
     return { snapshot: scene.build(nowMs), nowMs, sceneId: scene.id };
   }
@@ -44,7 +51,7 @@ export async function getSnapshot(req: SnapshotRequest = {}): Promise<SnapshotRe
         return {
           snapshot: {
             ...cached,
-            origin: 'cache',
+            origin: "cache",
             degradedReason: `Live feeds unreachable (${err.message}). Showing the last successful snapshot.`,
           },
           nowMs,
@@ -58,8 +65,13 @@ export async function getSnapshot(req: SnapshotRequest = {}): Promise<SnapshotRe
           vehicles: [],
           tripUpdates: [],
           alerts: [],
-          freshness: { fetchedAtMs: nowMs, feedTimestampMs: null, ageSeconds: 0, label: 'expired' },
-          origin: 'live',
+          freshness: {
+            fetchedAtMs: nowMs,
+            feedTimestampMs: null,
+            ageSeconds: 0,
+            label: "expired",
+          },
+          origin: "live",
           degradedReason: `No real-time data available: ${err.message}. Schedule-only information is still shown; nothing here is a live vehicle observation.`,
           sources: [],
         },

@@ -4,11 +4,11 @@
  * `publicRuntimeInfo()`, which contains no secrets.
  */
 
-export type GemmaProvider = 'google' | 'demo';
+export type GemmaProvider = "google" | "demo";
 
 function env(name: string): string | undefined {
   const v = process.env[name];
-  return v && v.trim() !== '' ? v.trim() : undefined;
+  return v && v.trim() !== "" ? v.trim() : undefined;
 }
 
 export interface AppConfig {
@@ -27,22 +27,25 @@ export interface AppConfig {
  * the Gemini API. Only these two are available on generativelanguage.googleapis.com;
  * ids like `gemma-4-12b-it` exist on Hugging Face but are NOT callable there.
  */
-export const SUPPORTED_GOOGLE_GEMMA_MODELS = ['gemma-4-31b-it', 'gemma-4-26b-a4b-it'] as const;
+export const SUPPORTED_GOOGLE_GEMMA_MODELS = [
+  "gemma-4-31b-it",
+  "gemma-4-26b-a4b-it",
+] as const;
 
-export const DEFAULT_GEMMA_MODEL = 'gemma-4-31b-it';
+export const DEFAULT_GEMMA_MODEL = "gemma-4-31b-it";
 
 export function getConfig(): AppConfig {
-  const provider = (env('GEMMA_PROVIDER') ?? 'google') as GemmaProvider;
-  const googleApiKey = env('GOOGLE_API_KEY');
-  const gemmaModel = env('GEMMA_MODEL') ?? DEFAULT_GEMMA_MODEL;
-  const demoMode = (env('DEMO_MODE') ?? 'true').toLowerCase() !== 'false';
+  const provider = (env("GEMMA_PROVIDER") ?? "google") as GemmaProvider;
+  const googleApiKey = env("GOOGLE_API_KEY");
+  const gemmaModel = env("GEMMA_MODEL") ?? DEFAULT_GEMMA_MODEL;
+  const demoMode = (env("DEMO_MODE") ?? "true").toLowerCase() !== "false";
   // A live Gemma call needs both the provider selected AND a usable credential.
-  const gemmaLive = provider === 'google' && Boolean(googleApiKey);
+  const gemmaLive = provider === "google" && Boolean(googleApiKey);
   return {
     gemmaProvider: provider,
     gemmaModel,
     googleApiKey,
-    googlePlacesApiKey: env('GOOGLE_PLACES_API_KEY'),
+    googlePlacesApiKey: env("GOOGLE_PLACES_API_KEY"),
     demoMode,
     gemmaLive,
   };
@@ -50,11 +53,11 @@ export function getConfig(): AppConfig {
 
 /** Safe to serialise to the client. Deliberately contains no key material. */
 export interface PublicRuntimeInfo {
-  gemmaMode: 'live-gemma' | 'deterministic-demo';
+  gemmaMode: "live-gemma" | "deterministic-demo";
   gemmaModel: string;
   gemmaProvider: GemmaProvider;
   demoMode: boolean;
-  placesProvider: 'google-places' | 'openstreetmap';
+  placesProvider: "google-places" | "openstreetmap";
   /** Explains to a judge exactly why the badge says what it says. */
   modeReason: string;
 }
@@ -62,15 +65,15 @@ export interface PublicRuntimeInfo {
 export function publicRuntimeInfo(cfg = getConfig()): PublicRuntimeInfo {
   const reason = cfg.gemmaLive
     ? `Calling ${cfg.gemmaModel} on the Gemini API with native function declarations.`
-    : cfg.gemmaProvider === 'demo'
+    : cfg.gemmaProvider === "demo"
       ? 'GEMMA_PROVIDER is set to "demo": explanations come from the deterministic orchestrator, not a language model.'
-      : 'No GOOGLE_API_KEY is configured, so no language model is being called. All numbers still come from the deterministic engine.';
+      : "No GOOGLE_API_KEY is configured, so no language model is being called. All numbers still come from the deterministic engine.";
   return {
-    gemmaMode: cfg.gemmaLive ? 'live-gemma' : 'deterministic-demo',
+    gemmaMode: cfg.gemmaLive ? "live-gemma" : "deterministic-demo",
     gemmaModel: cfg.gemmaModel,
     gemmaProvider: cfg.gemmaProvider,
     demoMode: cfg.demoMode,
-    placesProvider: cfg.googlePlacesApiKey ? 'google-places' : 'openstreetmap',
+    placesProvider: cfg.googlePlacesApiKey ? "google-places" : "openstreetmap",
     modeReason: reason,
   };
 }

@@ -1,4 +1,4 @@
-import type { CampusRouteId } from '@/lib/domain';
+import type { CampusRouteId } from "@/lib/domain";
 
 /**
  * How much we actually know about a specific scheduled trip.
@@ -9,11 +9,11 @@ import type { CampusRouteId } from '@/lib/domain';
  * "chance the bus arrives".
  */
 export type EvidenceLabel =
-  | 'observed' // a vehicle position is visible and recent
-  | 'reported' // no position, but a fresh trip update exists
-  | 'scheduled-only' // timetable only; nothing real-time
-  | 'stale' // real-time exists but is too old to lean on
-  | 'blocked'; // an alert or feed state rules this option out
+  | "observed" // a vehicle position is visible and recent
+  | "reported" // no position, but a fresh trip update exists
+  | "scheduled-only" // timetable only; nothing real-time
+  | "stale" // real-time exists but is too old to lean on
+  | "blocked"; // an alert or feed state rules this option out
 
 export interface EvidenceSignal {
   key: string;
@@ -22,7 +22,8 @@ export interface EvidenceSignal {
   /** Contribution to the confidence score, positive or negative. */
   weight: number;
   /** Which feed this came from, for the evidence chips. */
-  source: 'vehicle_positions' | 'trip_updates' | 'service_alerts' | 'static_schedule';
+  source:
+    "vehicle_positions" | "trip_updates" | "service_alerts" | "static_schedule";
   /** Epoch ms of the underlying observation, when there is one. */
   observedAtMs: number | null;
 }
@@ -53,7 +54,7 @@ export interface RouteEvidence {
 }
 
 export interface JourneyLeg {
-  kind: 'bus' | 'walk';
+  kind: "bus" | "walk";
   routeId?: string;
   tripId?: string;
   label: string;

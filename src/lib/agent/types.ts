@@ -4,11 +4,11 @@ export interface TraceEntry {
   tool: string;
   /** Arguments after redaction. */
   args: Record<string, unknown>;
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   durationMs: number;
   /** Where the underlying data came from. */
   source: string | null;
-  origin: 'live' | 'cache' | 'fixture' | null;
+  origin: "live" | "cache" | "fixture" | null;
   sourceTimestamp: string | null;
   /** Short human-readable summary of what came back. Never the full payload. */
   resultSummary: string;
@@ -19,7 +19,8 @@ export interface AgentResult {
   /** The rider-facing prose answer. */
   message: string;
   /** Which engine produced `message`. */
-  explanationMode: 'live-gemma' | 'deterministic-demo' | 'deterministic-fallback';
+  explanationMode:
+    "live-gemma" | "deterministic-demo" | "deterministic-fallback";
   /** Populated when Gemma was attempted and failed. */
   fallbackReason?: string;
   trace: TraceEntry[];
@@ -33,7 +34,7 @@ export interface AgentResult {
 
 export interface AgentRequest {
   message: string;
-  direction: 'to-campus' | 'to-home';
+  direction: "to-campus" | "to-home";
   destinationKey?: string;
   sceneId?: string;
   demo?: boolean;

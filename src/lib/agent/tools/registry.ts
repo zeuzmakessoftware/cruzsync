@@ -6,7 +6,7 @@
  * editorialise -- they return structured facts with provenance attached, and the
  * model's job is to explain them, not to recompute them.
  */
-import { z } from 'zod';
+import { z } from "zod";
 import {
   CAMPUS_DESTINATIONS,
   DEFAULTS,
@@ -14,31 +14,55 @@ import {
   RIVERFRONT,
   SCOTTS_VALLEY,
   TRUNK_ROUTE_ID,
-} from '@/lib/domain';
-import { getScheduledDepartures, getStop } from '@/lib/gtfs/feed';
-import { agencyDateString } from '@/lib/gtfs/time';
-import { analyzeRouteEvidence, isAlertActive } from '@/lib/engine/evidence';
-import { analyzeHeadway } from '@/lib/engine/headway';
-import { buildMultilegTrip, buildReturnTrip, compareUcscOptions } from '@/lib/engine/multileg';
-import { calculateSafeWait, deriveUncertaintyBuffer, estimateWalkSeconds } from '@/lib/engine/safewait';
-import { DEFAULT_PREFERENCES, type RiderPreferences, type RouteEvidence } from '@/lib/engine/types';
-import { NO_FILTERS, type PlaceFilters, type WaitPlace } from '@/lib/places/types';
-import { rankWaitPlaces, stayNearStopAdvice } from '@/lib/places/rank';
-import type { RealtimeSnapshot } from '@/lib/rt/types';
-import { toolArgSchemas, toolResultSchemas, type ToolName } from './schemas';
+} from "@/lib/domain";
+import { getScheduledDepartures, getStop } from "@/lib/gtfs/feed";
+import { agencyDateString } from "@/lib/gtfs/time";
+import { analyzeRouteEvidence, isAlertActive } from "@/lib/engine/evidence";
+import { analyzeHeadway } from "@/lib/engine/headway";
+import {
+  buildMultilegTrip,
+  buildReturnTrip,
+  compareUcscOptions,
+} from "@/lib/engine/multileg";
+import {
+  calculateSafeWait,
+  deriveUncertaintyBuffer,
+  estimateWalkSeconds,
+} from "@/lib/engine/safewait";
+import {
+  DEFAULT_PREFERENCES,
+  type RiderPreferences,
+  type RouteEvidence,
+} from "@/lib/engine/types";
+import {
+  NO_FILTERS,
+  type PlaceFilters,
+  type WaitPlace,
+} from "@/lib/places/types";
+import { rankWaitPlaces, stayNearStopAdvice } from "@/lib/places/rank";
+import type { RealtimeSnapshot } from "@/lib/rt/types";
+import { toolArgSchemas, toolResultSchemas, type ToolName } from "./schemas";
 
 export interface ToolContext {
   snapshot: RealtimeSnapshot;
   nowMs: number;
   /** Resolves nearby places. Injected so tests and demo mode stay offline. */
-  findPlaces: (args: { lat: number; lon: number; radiusMetres: number }) => Promise<WaitPlace[]>;
+  findPlaces: (args: {
+    lat: number;
+    lon: number;
+    radiusMetres: number;
+  }) => Promise<WaitPlace[]>;
   placesProviderName: string;
   preferences: RiderPreferences;
 }
 
 const iso = (ms: number) => new Date(ms).toISOString();
 
-function provenance(ctx: ToolContext, source: string, observedAtMs?: number | null) {
+function provenance(
+  ctx: ToolContext,
+  source: string,
+  observedAtMs?: number | null,
+) {
   return {
     source,
     origin: ctx.snapshot.origin,
@@ -75,11 +99,17 @@ function serialiseEvidence(e: RouteEvidence) {
   };
 }
 
-function mergePrefs(ctx: ToolContext, incoming?: Partial<RiderPreferences>): RiderPreferences {
+function mergePrefs(
+  ctx: ToolContext,
+  incoming?: Partial<RiderPreferences>,
+): RiderPreferences {
   return { ...DEFAULT_PREFERENCES, ...ctx.preferences, ...(incoming ?? {}) };
 }
 
-function toFilters(p: RiderPreferences, incoming?: Partial<PlaceFilters>): PlaceFilters {
+function toFilters(
+  p: RiderPreferences,
+  incoming?: Partial<PlaceFilters>,
+): PlaceFilters {
   return {
     ...NO_FILTERS,
     requireFree: p.requireFree,
@@ -135,13 +165,20 @@ function amenityMap(place: WaitPlace) {
 type Impl = (args: never, ctx: ToolContext) => Promise<unknown>;
 
 const implementations: Record<ToolName, Impl> = {
-  get_vehicle_positions: async (args: z.infer<typeof toolArgSchemas.get_vehicle_positions>, ctx) => {
+  get_vehicle_positions: async (
+    args: z.infer<typeof toolArgSchemas.get_vehicle_positions>,
+    ctx,
+  ) => {
     let v = ctx.snapshot.vehicles;
     if (args.routeId) v = v.filter((x) => x.routeId === args.routeId);
     if (args.tripId) v = v.filter((x) => x.tripId === args.tripId);
     if (args.vehicleId) v = v.filter((x) => x.vehicleId === args.vehicleId);
     return {
-      provenance: provenance(ctx, 'GTFS-Realtime vehicle positions', ctx.snapshot.freshness.feedTimestampMs),
+      provenance: provenance(
+        ctx,
+        "GTFS-Realtime vehicle positions",
+        ctx.snapshot.freshness.feedTimestampMs,
+      ),
       count: v.length,
       vehicles: v.map((x) => ({
         vehicleId: x.vehicleId,
@@ -156,33 +193,53 @@ const implementations: Record<ToolName, Impl> = {
     };
   },
 
-  get_trip_updates: async (args: z.infer<typeof toolArgSchemas.get_trip_updates>, ctx) => {
+  get_trip_updates: async (
+    args: z.infer<typeof toolArgSchemas.get_trip_updates>,
+    ctx,
+  ) => {
     let t = ctx.snapshot.tripUpdates;
     if (args.routeId) t = t.filter((x) => x.routeId === args.routeId);
     if (args.tripId) t = t.filter((x) => x.tripId === args.tripId);
-    if (args.stopId) t = t.filter((x) => x.stopTimeUpdates.some((s) => s.stopId === args.stopId));
+    if (args.stopId)
+      t = t.filter((x) =>
+        x.stopTimeUpdates.some((s) => s.stopId === args.stopId),
+      );
     return {
-      provenance: provenance(ctx, 'GTFS-Realtime trip updates', ctx.snapshot.freshness.feedTimestampMs),
+      provenance: provenance(
+        ctx,
+        "GTFS-Realtime trip updates",
+        ctx.snapshot.freshness.feedTimestampMs,
+      ),
       count: t.length,
       tripUpdates: t.map((x) => ({
         tripId: x.tripId,
         routeId: x.routeId,
         delaySec: x.delaySec,
         scheduleRelationship: x.scheduleRelationship,
-        ageSeconds: x.timestampMs ? Math.round((ctx.nowMs - x.timestampMs) / 1000) : null,
+        ageSeconds: x.timestampMs
+          ? Math.round((ctx.nowMs - x.timestampMs) / 1000)
+          : null,
         stopCount: x.stopTimeUpdates.length,
       })),
     };
   },
 
-  get_service_alerts: async (args: z.infer<typeof toolArgSchemas.get_service_alerts>, ctx) => {
+  get_service_alerts: async (
+    args: z.infer<typeof toolArgSchemas.get_service_alerts>,
+    ctx,
+  ) => {
     const all = ctx.snapshot.alerts.filter((a) => {
-      if (args.routeId && !a.informedRouteIds.includes(args.routeId)) return false;
+      if (args.routeId && !a.informedRouteIds.includes(args.routeId))
+        return false;
       if (args.stopId && !a.informedStopIds.includes(args.stopId)) return false;
       return true;
     });
     return {
-      provenance: provenance(ctx, 'GTFS-Realtime service alerts', ctx.snapshot.freshness.feedTimestampMs),
+      provenance: provenance(
+        ctx,
+        "GTFS-Realtime service alerts",
+        ctx.snapshot.freshness.feedTimestampMs,
+      ),
       count: all.length,
       alerts: all.map((a) => ({
         id: a.id,
@@ -195,7 +252,10 @@ const implementations: Record<ToolName, Impl> = {
     };
   },
 
-  get_stop_schedule: async (args: z.infer<typeof toolArgSchemas.get_stop_schedule>, ctx) => {
+  get_stop_schedule: async (
+    args: z.infer<typeof toolArgSchemas.get_stop_schedule>,
+    ctx,
+  ) => {
     const stop = getStop(args.stopId);
     let departures = getScheduledDepartures({
       stopId: args.stopId,
@@ -222,7 +282,10 @@ const implementations: Record<ToolName, Impl> = {
           })
         : null;
     return {
-      provenance: provenance(ctx, `Static GTFS schedule (${agencyDateString(ctx.nowMs)})`),
+      provenance: provenance(
+        ctx,
+        `Static GTFS schedule (${agencyDateString(ctx.nowMs)})`,
+      ),
       stopId: args.stopId,
       stopName: stop?.stop_name ?? args.stopId,
       serviceDate: args.serviceDate ?? agencyDateString(ctx.nowMs),
@@ -245,8 +308,14 @@ const implementations: Record<ToolName, Impl> = {
     };
   },
 
-  build_multileg_trip: async (args: z.infer<typeof toolArgSchemas.build_multileg_trip>, ctx) => {
-    const prefs = mergePrefs(ctx, args.preferences as Partial<RiderPreferences>);
+  build_multileg_trip: async (
+    args: z.infer<typeof toolArgSchemas.build_multileg_trip>,
+    ctx,
+  ) => {
+    const prefs = mergePrefs(
+      ctx,
+      args.preferences as Partial<RiderPreferences>,
+    );
     const trip = buildMultilegTrip({
       snapshot: ctx.snapshot,
       nowMs: args.departureTime ? Date.parse(args.departureTime) : ctx.nowMs,
@@ -256,10 +325,13 @@ const implementations: Record<ToolName, Impl> = {
       preferences: prefs,
     });
     const range = Number.isFinite(trip.expectedArrivalRangeMs[0])
-      ? ([iso(trip.expectedArrivalRangeMs[0]), iso(trip.expectedArrivalRangeMs[1])] as [string, string])
+      ? ([
+          iso(trip.expectedArrivalRangeMs[0]),
+          iso(trip.expectedArrivalRangeMs[1]),
+        ] as [string, string])
       : null;
     return {
-      provenance: provenance(ctx, 'CruzSync deterministic routing engine'),
+      provenance: provenance(ctx, "CruzSync deterministic routing engine"),
       legs: trip.legs.map((l) => ({
         kind: l.kind,
         routeId: l.routeId,
@@ -277,7 +349,10 @@ const implementations: Record<ToolName, Impl> = {
     };
   },
 
-  analyze_route_evidence: async (args: z.infer<typeof toolArgSchemas.analyze_route_evidence>, ctx) => {
+  analyze_route_evidence: async (
+    args: z.infer<typeof toolArgSchemas.analyze_route_evidence>,
+    ctx,
+  ) => {
     const nowMs = args.currentTime ? Date.parse(args.currentTime) : ctx.nowMs;
     // Resolve the scheduled departure from the timetable rather than trusting
     // the model to supply it.
@@ -298,23 +373,34 @@ const implementations: Record<ToolName, Impl> = {
       nowMs,
     });
     return {
-      provenance: provenance(ctx, 'CruzSync evidence engine over GTFS-Realtime'),
+      provenance: provenance(
+        ctx,
+        "CruzSync evidence engine over GTFS-Realtime",
+      ),
       evidence: serialiseEvidence(evidence),
     };
   },
 
-  compare_ucsc_options: async (args: z.infer<typeof toolArgSchemas.compare_ucsc_options>, ctx) => {
-    const prefs = mergePrefs(ctx, args.preferences as Partial<RiderPreferences>);
+  compare_ucsc_options: async (
+    args: z.infer<typeof toolArgSchemas.compare_ucsc_options>,
+    ctx,
+  ) => {
+    const prefs = mergePrefs(
+      ctx,
+      args.preferences as Partial<RiderPreferences>,
+    );
     const c = compareUcscOptions({
       snapshot: ctx.snapshot,
       nowMs: ctx.nowMs,
       destinationKey: args.campusDestination,
-      earliestAtArea1Ms: args.earliestAtArea1 ? Date.parse(args.earliestAtArea1) : ctx.nowMs,
+      earliestAtArea1Ms: args.earliestAtArea1
+        ? Date.parse(args.earliestAtArea1)
+        : ctx.nowMs,
       preferences: prefs,
       candidateRouteIds: args.candidateRouteIds,
     });
     return {
-      provenance: provenance(ctx, 'CruzSync deterministic comparison engine'),
+      provenance: provenance(ctx, "CruzSync deterministic comparison engine"),
       destinationKey: c.destinationKey,
       destinationName: c.destinationName,
       bestRouteId: c.bestRouteId,
@@ -327,7 +413,10 @@ const implementations: Record<ToolName, Impl> = {
         score: Number.isFinite(o.score) ? o.score : 999_999,
         transferMarginSec: o.transferMarginSec,
         arrivalRange: o.arrivalRangeMs
-          ? ([iso(o.arrivalRangeMs[0]), iso(o.arrivalRangeMs[1])] as [string, string])
+          ? ([iso(o.arrivalRangeMs[0]), iso(o.arrivalRangeMs[1])] as [
+              string,
+              string,
+            ])
           : undefined,
         scoreBreakdown: o.scoreBreakdown,
         blockedReasons: o.blockedReasons,
@@ -336,7 +425,10 @@ const implementations: Record<ToolName, Impl> = {
     };
   },
 
-  get_nearby_wait_places: async (args: z.infer<typeof toolArgSchemas.get_nearby_wait_places>, ctx) => {
+  get_nearby_wait_places: async (
+    args: z.infer<typeof toolArgSchemas.get_nearby_wait_places>,
+    ctx,
+  ) => {
     const stop = getStop(args.boardingStopId);
     if (!stop) {
       return {
@@ -393,7 +485,11 @@ const implementations: Record<ToolName, Impl> = {
     });
     const ranked = rankWaitPlaces({
       places,
-      boardingStop: { lat: stop.stop_lat, lon: stop.stop_lon, name: stop.stop_name },
+      boardingStop: {
+        lat: stop.stop_lat,
+        lon: stop.stop_lon,
+        name: stop.stop_name,
+      },
       nowMs: ctx.nowMs,
       predictedDepartureMs,
       uncertaintyBufferSeconds: uncertainty.seconds,
@@ -410,8 +506,8 @@ const implementations: Record<ToolName, Impl> = {
             providerError
               ? `Place data could not be loaded (${providerError}).`
               : places.length === 0
-                ? 'No nearby places were found in the data source.'
-                : 'Nothing nearby could be confirmed open for long enough.',
+                ? "No nearby places were found in the data source."
+                : "Nothing nearby could be confirmed open for long enough.",
           );
 
     return {
@@ -425,16 +521,27 @@ const implementations: Record<ToolName, Impl> = {
     };
   },
 
-  get_place_details: async (args: z.infer<typeof toolArgSchemas.get_place_details>, ctx) => {
+  get_place_details: async (
+    args: z.infer<typeof toolArgSchemas.get_place_details>,
+    ctx,
+  ) => {
     // Search around the downtown areas and match by id.
     const places = await ctx
-      .findPlaces({ lat: RIVERFRONT.AREA_2.lat, lon: RIVERFRONT.AREA_2.lon, radiusMetres: 800 })
+      .findPlaces({
+        lat: RIVERFRONT.AREA_2.lat,
+        lon: RIVERFRONT.AREA_2.lon,
+        radiusMetres: 800,
+      })
       .catch(() => [] as WaitPlace[]);
     const place = places.find((p) => p.id === args.placeId);
     const fmt = (min: number) =>
-      `${String(Math.floor((min % (24 * 60)) / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+      `${String(Math.floor((min % (24 * 60)) / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
     return {
-      provenance: provenance(ctx, ctx.placesProviderName, place?.hours?.fetchedAtMs ?? null),
+      provenance: provenance(
+        ctx,
+        ctx.placesProviderName,
+        place?.hours?.fetchedAtMs ?? null,
+      ),
       found: Boolean(place),
       place: place
         ? {
@@ -456,19 +563,26 @@ const implementations: Record<ToolName, Impl> = {
     };
   },
 
-  get_walking_time: async (args: z.infer<typeof toolArgSchemas.get_walking_time>, ctx) => {
+  get_walking_time: async (
+    args: z.infer<typeof toolArgSchemas.get_walking_time>,
+    ctx,
+  ) => {
     const stop = getStop(args.destinationStopId);
     const places = await ctx
-      .findPlaces({ lat: RIVERFRONT.AREA_2.lat, lon: RIVERFRONT.AREA_2.lon, radiusMetres: 800 })
+      .findPlaces({
+        lat: RIVERFRONT.AREA_2.lat,
+        lon: RIVERFRONT.AREA_2.lon,
+        radiusMetres: 800,
+      })
       .catch(() => [] as WaitPlace[]);
     const place = places.find((p) => p.id === args.originPlaceId);
     if (!stop || !place) {
       return {
-        provenance: provenance(ctx, 'CruzSync walking estimate'),
+        provenance: provenance(ctx, "CruzSync walking estimate"),
         seconds: 0,
         metres: 0,
         estimated: true,
-        provider: 'haversine-estimate',
+        provider: "haversine-estimate",
       };
     }
     const est = estimateWalkSeconds(
@@ -477,15 +591,18 @@ const implementations: Record<ToolName, Impl> = {
       { reducedMobility: ctx.preferences.reducedMobility },
     );
     return {
-      provenance: provenance(ctx, 'CruzSync walking estimate'),
+      provenance: provenance(ctx, "CruzSync walking estimate"),
       seconds: est.seconds,
       metres: est.metres,
       estimated: true,
-      provider: 'haversine-estimate',
+      provider: "haversine-estimate",
     };
   },
 
-  calculate_safe_wait: async (args: z.infer<typeof toolArgSchemas.calculate_safe_wait>, ctx) => {
+  calculate_safe_wait: async (
+    args: z.infer<typeof toolArgSchemas.calculate_safe_wait>,
+    ctx,
+  ) => {
     const r = calculateSafeWait({
       nowMs: ctx.nowMs,
       predictedDepartureMs: Date.parse(args.predictedDeparture),
@@ -495,7 +612,7 @@ const implementations: Record<ToolName, Impl> = {
       minimumUsefulVisitSeconds: args.minimumUsefulVisitSeconds,
     });
     return {
-      provenance: provenance(ctx, 'CruzSync safe-wait calculator'),
+      provenance: provenance(ctx, "CruzSync safe-wait calculator"),
       leaveByIso: iso(r.leaveByMs),
       wrapUpAtIso: iso(r.wrapUpAtMs),
       usableWaitSeconds: r.usableWaitSeconds,
@@ -504,12 +621,18 @@ const implementations: Record<ToolName, Impl> = {
     };
   },
 
-  recommend_next_action: async (args: z.infer<typeof toolArgSchemas.recommend_next_action>, ctx) => {
-    const prefs = mergePrefs(ctx, args.preferences as Partial<RiderPreferences>);
-    const prov = provenance(ctx, 'CruzSync recommendation engine');
+  recommend_next_action: async (
+    args: z.infer<typeof toolArgSchemas.recommend_next_action>,
+    ctx,
+  ) => {
+    const prefs = mergePrefs(
+      ctx,
+      args.preferences as Partial<RiderPreferences>,
+    );
+    const prov = provenance(ctx, "CruzSync recommendation engine");
     const evidenceRefs: string[] = [];
 
-    if (args.direction === 'to-campus') {
+    if (args.direction === "to-campus") {
       const destKey = args.destinationKey ?? CAMPUS_DESTINATIONS[0].key;
       const trip = buildMultilegTrip({
         snapshot: ctx.snapshot,
@@ -521,30 +644,34 @@ const implementations: Record<ToolName, Impl> = {
       if (!c.bestRouteId) {
         return {
           provenance: prov,
-          action: 'DATA TOO UNCERTAIN' as const,
-          headline: 'No campus connection can be recommended right now',
-          subhead: c.undecidedReason ?? 'Nothing feasible was found.',
+          action: "DATA TOO UNCERTAIN" as const,
+          headline: "No campus connection can be recommended right now",
+          subhead: c.undecidedReason ?? "Nothing feasible was found.",
           boardingStopId: RIVERFRONT.AREA_1.stopId,
           boardingStopLabel: RIVERFRONT.AREA_1.label,
           departureIso: null,
           leaveByIso: null,
           reevaluateAtIso: iso(ctx.nowMs + 5 * 60_000),
           backupPlan: `Wait at ${RIVERFRONT.AREA_1.label} and re-check in a few minutes.`,
-          blockedReasons: [...trip.blockedReasons, ...(c.undecidedReason ? [c.undecidedReason] : [])],
+          blockedReasons: [
+            ...trip.blockedReasons,
+            ...(c.undecidedReason ? [c.undecidedReason] : []),
+          ],
           evidenceRefs,
           waitPlaces: null,
           fallbackAdvice: null,
         };
       }
       const best = c.options.find((o) => o.routeId === c.bestRouteId)!;
-      const runnerUp = c.options.find((o) => o.routeId !== c.bestRouteId && o.feasible);
-      if (best.evidence) evidenceRefs.push(`${best.evidence.label}:${best.evidence.tripId}`);
+      const runnerUp = c.options.find(
+        (o) => o.routeId !== c.bestRouteId && o.feasible,
+      );
+      if (best.evidence)
+        evidenceRefs.push(`${best.evidence.label}:${best.evidence.tripId}`);
       return {
         provenance: prov,
         action: `TRANSFER TO ${best.routeId}` as
-          | 'TRANSFER TO 11'
-          | 'TRANSFER TO 18'
-          | 'TRANSFER TO 19',
+          "TRANSFER TO 11" | "TRANSFER TO 18" | "TRANSFER TO 19",
         headline: `35 → RiverFront · then take the ${best.routeId}`,
         subhead: `${c.destinationName} · ${
           best.evidence?.vehicleVisible
@@ -553,9 +680,16 @@ const implementations: Record<ToolName, Impl> = {
         }`,
         boardingStopId: RIVERFRONT.AREA_1.stopId,
         boardingStopLabel: RIVERFRONT.AREA_1.label,
-        departureIso: best.evidence ? iso(best.evidence.predictedDepartureMs) : null,
+        departureIso: best.evidence
+          ? iso(best.evidence.predictedDepartureMs)
+          : null,
         leaveByIso: null,
-        reevaluateAtIso: iso(Math.min(ctx.nowMs + 5 * 60_000, best.evidence?.predictedDepartureMs ?? Infinity)),
+        reevaluateAtIso: iso(
+          Math.min(
+            ctx.nowMs + 5 * 60_000,
+            best.evidence?.predictedDepartureMs ?? Infinity,
+          ),
+        ),
         backupPlan: runnerUp
           ? `If the ${best.routeId} does not appear, the ${runnerUp.routeId} is the next option from ${RIVERFRONT.AREA_1.label}.`
           : `If the ${best.routeId} does not appear, wait at ${RIVERFRONT.AREA_1.label} for the next campus route.`,
@@ -567,19 +701,23 @@ const implementations: Record<ToolName, Impl> = {
     }
 
     /* --- heading home --- */
-    const ret = buildReturnTrip({ snapshot: ctx.snapshot, nowMs: ctx.nowMs, preferences: prefs });
+    const ret = buildReturnTrip({
+      snapshot: ctx.snapshot,
+      nowMs: ctx.nowMs,
+      preferences: prefs,
+    });
     if (!ret.next35) {
       return {
         provenance: prov,
-        action: 'DATA TOO UNCERTAIN' as const,
-        headline: 'No Route 35 home could be found',
-        subhead: ret.blockedReasons[0] ?? 'No reachable departure.',
+        action: "DATA TOO UNCERTAIN" as const,
+        headline: "No Route 35 home could be found",
+        subhead: ret.blockedReasons[0] ?? "No reachable departure.",
         boardingStopId: RIVERFRONT.AREA_2.stopId,
         boardingStopLabel: RIVERFRONT.AREA_2.label,
         departureIso: null,
         leaveByIso: null,
         reevaluateAtIso: iso(ctx.nowMs + 10 * 60_000),
-        backupPlan: 'Check Santa Cruz METRO directly for late-night service.',
+        backupPlan: "Check Santa Cruz METRO directly for late-night service.",
         blockedReasons: ret.blockedReasons,
         evidenceRefs,
         waitPlaces: null,
@@ -601,11 +739,19 @@ const implementations: Record<ToolName, Impl> = {
     let rankedPlaces: ReturnType<typeof rankWaitPlaces> = [];
     if (args.considerWaitPlaces !== false) {
       const places = await ctx
-        .findPlaces({ lat: stop.stop_lat, lon: stop.stop_lon, radiusMetres: 600 })
+        .findPlaces({
+          lat: stop.stop_lat,
+          lon: stop.stop_lon,
+          radiusMetres: 600,
+        })
         .catch(() => [] as WaitPlace[]);
       const ranked = rankWaitPlaces({
         places,
-        boardingStop: { lat: stop.stop_lat, lon: stop.stop_lon, name: RIVERFRONT.AREA_2.label },
+        boardingStop: {
+          lat: stop.stop_lat,
+          lon: stop.stop_lon,
+          name: RIVERFRONT.AREA_2.label,
+        },
         nowMs: ctx.nowMs,
         predictedDepartureMs: ret.next35.predictedDepartureMs,
         uncertaintyBufferSeconds: uncertainty.seconds,
@@ -619,7 +765,7 @@ const implementations: Record<ToolName, Impl> = {
     if (bestPlace) {
       return {
         provenance: prov,
-        action: 'WAIT AT A PLACE' as const,
+        action: "WAIT AT A PLACE" as const,
         headline: `You have ${Math.round(bestPlace.usableWaitSeconds / 60)} usable minutes`,
         subhead: `${bestPlace.place.name} · ${bestPlace.summary}`,
         boardingStopId: RIVERFRONT.AREA_2.stopId,
@@ -643,23 +789,26 @@ const implementations: Record<ToolName, Impl> = {
     });
     return {
       provenance: prov,
-      action: 'WAIT AT STOP' as const,
+      action: "WAIT AT STOP" as const,
       headline: `Wait at ${RIVERFRONT.AREA_2.label}`,
       subhead: `Route ${TRUNK_ROUTE_ID} leaves in about ${Math.round((ret.next35.predictedDepartureMs - ctx.nowMs) / 60000)} minutes.`,
       boardingStopId: RIVERFRONT.AREA_2.stopId,
       boardingStopLabel: RIVERFRONT.AREA_2.label,
       departureIso: iso(ret.next35.predictedDepartureMs),
       leaveByIso: iso(safe.leaveByMs),
-      reevaluateAtIso: iso(Math.min(ctx.nowMs + 5 * 60_000, ret.next35.predictedDepartureMs)),
-      backupPlan: 'Nothing nearby could be confirmed open for long enough to be worth leaving the stop.',
+      reevaluateAtIso: iso(
+        Math.min(ctx.nowMs + 5 * 60_000, ret.next35.predictedDepartureMs),
+      ),
+      backupPlan:
+        "Nothing nearby could be confirmed open for long enough to be worth leaving the stop.",
       blockedReasons: [],
       evidenceRefs,
       waitPlaces: rankedPlaces.slice(0, 12).map(serialiseCandidate),
       fallbackAdvice: stayNearStopAdvice(
         RIVERFRONT.AREA_2.label,
         rankedPlaces.length === 0
-          ? 'No nearby places were found in the data source.'
-          : 'Nothing nearby could be confirmed open for long enough.',
+          ? "No nearby places were found in the data source."
+          : "Nothing nearby could be confirmed open for long enough.",
       ),
     };
   },
@@ -683,7 +832,7 @@ export async function executeTool(
   ctx: ToolContext,
 ): Promise<ToolCallOutcome> {
   const started = Date.now();
-  const finish = (o: Omit<ToolCallOutcome, 'durationMs'>): ToolCallOutcome => ({
+  const finish = (o: Omit<ToolCallOutcome, "durationMs">): ToolCallOutcome => ({
     ...o,
     durationMs: Date.now() - started,
   });
@@ -698,8 +847,8 @@ export async function executeTool(
     return finish({
       ok: false,
       error: `Invalid arguments for ${toolName}: ${parsedArgs.error.issues
-        .map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`)
-        .join('; ')}`,
+        .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+        .join("; ")}`,
     });
   }
 
@@ -707,7 +856,10 @@ export async function executeTool(
   try {
     raw = await implementations[toolName](parsedArgs.data as never, ctx);
   } catch (err) {
-    return finish({ ok: false, error: `${toolName} failed: ${err instanceof Error ? err.message : String(err)}` });
+    return finish({
+      ok: false,
+      error: `${toolName} failed: ${err instanceof Error ? err.message : String(err)}`,
+    });
   }
 
   const parsedResult = toolResultSchemas[toolName].safeParse(raw);
@@ -715,8 +867,8 @@ export async function executeTool(
     return finish({
       ok: false,
       error: `${toolName} produced a result that failed its own schema: ${parsedResult.error.issues
-        .map((i) => `${i.path.join('.')}: ${i.message}`)
-        .join('; ')}`,
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ")}`,
     });
   }
 

@@ -10,13 +10,13 @@ keys) lives in route handlers, so it deploys as one unit with no extra services.
    no build-command changes are needed.
 3. Add environment variables (Project → Settings → Environment Variables):
 
-   | Variable | Value | Required |
-   |---|---|---|
-   | `GEMMA_PROVIDER` | `google` | no (defaults to `google`) |
-   | `GOOGLE_API_KEY` | your Google AI Studio key | **only for Live Gemma** |
-   | `GEMMA_MODEL` | `gemma-4-31b-it` | no (this is the default) |
-   | `DEMO_MODE` | `true` for judging, `false` for live-first | no |
-   | `GOOGLE_PLACES_API_KEY` | Places (New) key | no (Overpass used otherwise) |
+   | Variable                | Value                                      | Required                     |
+   | ----------------------- | ------------------------------------------ | ---------------------------- |
+   | `GEMMA_PROVIDER`        | `google`                                   | no (defaults to `google`)    |
+   | `GOOGLE_API_KEY`        | your Google AI Studio key                  | **only for Live Gemma**      |
+   | `GEMMA_MODEL`           | `gemma-4-31b-it`                           | no (this is the default)     |
+   | `DEMO_MODE`             | `true` for judging, `false` for live-first | no                           |
+   | `GOOGLE_PLACES_API_KEY` | Places (New) key                           | no (Overpass used otherwise) |
 
 4. Deploy. The result is a public, no-login URL.
 

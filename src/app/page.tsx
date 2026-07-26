@@ -1,6 +1,6 @@
-import CruzSyncApp from '@/components/CruzSyncApp';
-import { getShapesForRoute } from '@/lib/gtfs/feed';
-import { CAMPUS_ROUTE_IDS, TRUNK_ROUTE_ID } from '@/lib/domain';
+import CruzSyncApp from "@/components/CruzSyncApp";
+import { getShapesForRoute } from "@/lib/gtfs/feed";
+import { CAMPUS_ROUTE_IDS, TRUNK_ROUTE_ID } from "@/lib/domain";
 
 /**
  * Route geometry is read from the committed GTFS on the server and passed down,

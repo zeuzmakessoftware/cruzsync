@@ -11,8 +11,8 @@
  * when the evidence is weak. Uncertainty must always cost the rider time rather
  * than earn them time.
  */
-import { DEFAULTS, ENGINE_VERSION } from '@/lib/domain';
-import type { RouteEvidence } from './types';
+import { DEFAULTS, ENGINE_VERSION } from "@/lib/domain";
+import type { RouteEvidence } from "./types";
 
 export interface SafeWaitInput {
   nowMs: number;
@@ -42,16 +42,21 @@ export interface SafeWaitResult {
 }
 
 export function calculateSafeWait(input: SafeWaitInput): SafeWaitResult {
-  const boardingBufferSeconds = input.boardingBufferSeconds ?? DEFAULTS.boardingBufferSeconds;
+  const boardingBufferSeconds =
+    input.boardingBufferSeconds ?? DEFAULTS.boardingBufferSeconds;
   const uncertaintyBufferSeconds =
     input.uncertaintyBufferSeconds ?? DEFAULTS.baseUncertaintyBufferSeconds;
   const minimumUsefulVisitSeconds =
     input.minimumUsefulVisitSeconds ?? DEFAULTS.minimumUsefulVisitSeconds;
   const walkSeconds = Math.max(0, Math.round(input.walkSeconds));
 
-  const totalReserveSec = walkSeconds + boardingBufferSeconds + uncertaintyBufferSeconds;
+  const totalReserveSec =
+    walkSeconds + boardingBufferSeconds + uncertaintyBufferSeconds;
   const leaveByMs = input.predictedDepartureMs - totalReserveSec * 1000;
-  const usableWaitSeconds = Math.max(0, Math.round((leaveByMs - input.nowMs) / 1000));
+  const usableWaitSeconds = Math.max(
+    0,
+    Math.round((leaveByMs - input.nowMs) / 1000),
+  );
 
   return {
     leaveByMs,
@@ -59,10 +64,13 @@ export function calculateSafeWait(input: SafeWaitInput): SafeWaitResult {
     wrapUpAtMs: leaveByMs - DEFAULTS.wrapUpLeadSeconds * 1000,
     hasUsefulTime: usableWaitSeconds >= minimumUsefulVisitSeconds,
     breakdown: [
-      { label: 'Time until the bus leaves', seconds: Math.round((input.predictedDepartureMs - input.nowMs) / 1000) },
-      { label: 'Walk back to the stop', seconds: -walkSeconds },
-      { label: 'Boarding buffer', seconds: -boardingBufferSeconds },
-      { label: 'Uncertainty buffer', seconds: -uncertaintyBufferSeconds },
+      {
+        label: "Time until the bus leaves",
+        seconds: Math.round((input.predictedDepartureMs - input.nowMs) / 1000),
+      },
+      { label: "Walk back to the stop", seconds: -walkSeconds },
+      { label: "Boarding buffer", seconds: -boardingBufferSeconds },
+      { label: "Uncertainty buffer", seconds: -uncertaintyBufferSeconds },
     ],
     walkSeconds,
     boardingBufferSeconds,
@@ -90,41 +98,43 @@ export function deriveUncertaintyBuffer(opts: {
   walkingTimeEstimated?: boolean;
 }): { seconds: number; reasons: string[] } {
   let seconds = DEFAULTS.baseUncertaintyBufferSeconds;
-  const reasons: string[] = [`Base buffer ${DEFAULTS.baseUncertaintyBufferSeconds / 60} min.`];
+  const reasons: string[] = [
+    `Base buffer ${DEFAULTS.baseUncertaintyBufferSeconds / 60} min.`,
+  ];
 
   const label = opts.evidence?.label;
-  if (label === 'scheduled-only') {
+  if (label === "scheduled-only") {
     seconds += 180;
-    reasons.push('No real-time evidence for this trip: +3 min.');
-  } else if (label === 'stale') {
+    reasons.push("No real-time evidence for this trip: +3 min.");
+  } else if (label === "stale") {
     seconds += 300;
-    reasons.push('Real-time evidence has gone stale: +5 min.');
-  } else if (label === 'reported') {
+    reasons.push("Real-time evidence has gone stale: +5 min.");
+  } else if (label === "reported") {
     seconds += 60;
-    reasons.push('Trip update only, no vehicle position: +1 min.');
-  } else if (label === 'blocked') {
+    reasons.push("Trip update only, no vehicle position: +1 min.");
+  } else if (label === "blocked") {
     seconds += 600;
-    reasons.push('A service alert affects this trip: +10 min.');
+    reasons.push("A service alert affects this trip: +10 min.");
   }
 
   if ((opts.feedAgeSeconds ?? 0) > DEFAULTS.staleAfterSeconds) {
     seconds += 120;
-    reasons.push('The real-time feed itself is behind: +2 min.');
+    reasons.push("The real-time feed itself is behind: +2 min.");
   }
 
   if ((opts.vehicleSpeedMps ?? 0) > 11) {
     seconds += 90;
-    reasons.push('The bus is moving quickly and could arrive early: +1.5 min.');
+    reasons.push("The bus is moving quickly and could arrive early: +1.5 min.");
   }
 
   if (opts.unfamiliarStop) {
     seconds += 60;
-    reasons.push('Unfamiliar boarding area: +1 min.');
+    reasons.push("Unfamiliar boarding area: +1 min.");
   }
 
   if (opts.walkingTimeEstimated) {
     seconds += 90;
-    reasons.push('Walking time is estimated rather than verified: +1.5 min.');
+    reasons.push("Walking time is estimated rather than verified: +1.5 min.");
   }
 
   return { seconds, reasons };
@@ -142,7 +152,8 @@ export function haversineMetres(
   const lat1 = toRad(a.lat);
   const lat2 = toRad(b.lat);
   const h =
-    Math.sin(dLat / 2) ** 2 + Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+    Math.sin(dLat / 2) ** 2 +
+    Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
@@ -157,6 +168,12 @@ export function estimateWalkSeconds(
 ): { seconds: number; metres: number; estimated: true } {
   const straight = haversineMetres(from, to);
   const metres = straight * DEFAULTS.walkingDetourFactor;
-  const speed = opts.reducedMobility ? DEFAULTS.walkingSpeedMps * 0.65 : DEFAULTS.walkingSpeedMps;
-  return { seconds: Math.round(metres / speed), metres: Math.round(metres), estimated: true };
+  const speed = opts.reducedMobility
+    ? DEFAULTS.walkingSpeedMps * 0.65
+    : DEFAULTS.walkingSpeedMps;
+  return {
+    seconds: Math.round(metres / speed),
+    metres: Math.round(metres),
+    estimated: true,
+  };
 }

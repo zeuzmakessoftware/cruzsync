@@ -9,35 +9,35 @@
  * does not tell us whether somewhere is quiet, has Wi-Fi, or is locally owned,
  * so those stay 'unknown'.
  */
-import { agencyDayOfWeek } from '@/lib/gtfs/time';
-import type { OpeningHours, PlacesProvider, WaitPlace } from './types';
+import { agencyDayOfWeek } from "@/lib/gtfs/time";
+import type { OpeningHours, PlacesProvider, WaitPlace } from "./types";
 
-const SEARCH_URL = 'https://places.googleapis.com/v1/places:searchNearby';
+const SEARCH_URL = "https://places.googleapis.com/v1/places:searchNearby";
 
 const FIELD_MASK = [
-  'places.id',
-  'places.displayName',
-  'places.formattedAddress',
-  'places.location',
-  'places.primaryType',
-  'places.primaryTypeDisplayName',
-  'places.businessStatus',
-  'places.websiteUri',
-  'places.regularOpeningHours',
-  'places.currentOpeningHours',
-  'places.priceLevel',
-  'places.accessibilityOptions',
-].join(',');
+  "places.id",
+  "places.displayName",
+  "places.formattedAddress",
+  "places.location",
+  "places.primaryType",
+  "places.primaryTypeDisplayName",
+  "places.businessStatus",
+  "places.websiteUri",
+  "places.regularOpeningHours",
+  "places.currentOpeningHours",
+  "places.priceLevel",
+  "places.accessibilityOptions",
+].join(",");
 
 const INCLUDED_TYPES = [
-  'cafe',
-  'coffee_shop',
-  'book_store',
-  'library',
-  'bakery',
-  'restaurant',
-  'park',
-  'market',
+  "cafe",
+  "coffee_shop",
+  "book_store",
+  "library",
+  "bakery",
+  "restaurant",
+  "park",
+  "market",
 ];
 
 interface GooglePeriodPoint {
@@ -99,15 +99,18 @@ export function mapGoogleHours(
     raw: hours.weekdayDescriptions?.[(dayOfWeek + 6) % 7] ?? null,
     parsed: true,
     todayWindows: windows,
-    source: 'google-places',
+    source: "google-places",
     fetchedAtMs: nowMs,
   };
 }
 
-export function mapGooglePlace(p: GooglePlace, nowMs: number): WaitPlace | null {
+export function mapGooglePlace(
+  p: GooglePlace,
+  nowMs: number,
+): WaitPlace | null {
   if (!p.location || !p.displayName?.text) return null;
-  const category = p.primaryType ?? 'place';
-  const outdoor = ['park', 'plaza', 'garden'].includes(category);
+  const category = p.primaryType ?? "place";
+  const outdoor = ["park", "plaza", "garden"].includes(category);
 
   return {
     id: `google:${p.id}`,
@@ -115,41 +118,49 @@ export function mapGooglePlace(p: GooglePlace, nowMs: number): WaitPlace | null 
     lat: p.location.latitude,
     lon: p.location.longitude,
     category,
-    categoryLabel: p.primaryTypeDisplayName?.text ?? category.replaceAll('_', ' '),
-    source: 'google-places',
+    categoryLabel:
+      p.primaryTypeDisplayName?.text ?? category.replaceAll("_", " "),
+    source: "google-places",
     businessStatus:
-      p.businessStatus === 'OPERATIONAL' ||
-      p.businessStatus === 'CLOSED_TEMPORARILY' ||
-      p.businessStatus === 'CLOSED_PERMANENTLY'
+      p.businessStatus === "OPERATIONAL" ||
+      p.businessStatus === "CLOSED_TEMPORARILY" ||
+      p.businessStatus === "CLOSED_PERMANENTLY"
         ? p.businessStatus
-        : 'unknown',
+        : "unknown",
     website: p.websiteUri ?? null,
     address: p.formattedAddress ?? null,
     hours:
-      mapGoogleHours(p.currentOpeningHours ?? p.regularOpeningHours, agencyDayOfWeek(nowMs), nowMs) ??
-      null,
+      mapGoogleHours(
+        p.currentOpeningHours ?? p.regularOpeningHours,
+        agencyDayOfWeek(nowMs),
+        nowMs,
+      ) ?? null,
 
     // Google does not report these, so they remain unknown rather than guessed.
-    hasWifi: 'unknown',
-    hasRestroom: 'unknown',
+    hasWifi: "unknown",
+    hasRestroom: "unknown",
     wheelchairAccessible:
       p.accessibilityOptions?.wheelchairAccessibleEntrance === true
         ? true
         : p.accessibilityOptions?.wheelchairAccessibleEntrance === false
           ? false
-          : 'unknown',
-    isIndoor: outdoor ? false : 'unknown',
-    isQuiet: 'unknown',
-    servesFood: ['restaurant', 'cafe', 'bakery', 'coffee_shop'].includes(category) ? true : 'unknown',
-    freeToEnter: ['library', 'park'].includes(category) ? true : 'unknown',
-    locallyOwned: 'unknown',
+          : "unknown",
+    isIndoor: outdoor ? false : "unknown",
+    isQuiet: "unknown",
+    servesFood: ["restaurant", "cafe", "bakery", "coffee_shop"].includes(
+      category,
+    )
+      ? true
+      : "unknown",
+    freeToEnter: ["library", "park"].includes(category) ? true : "unknown",
+    locallyOwned: "unknown",
     priceLevel: p.priceLevel ? (PRICE_LEVELS[p.priceLevel] ?? null) : null,
     sponsored: false,
   };
 }
 
 export class GooglePlacesProvider implements PlacesProvider {
-  readonly name = 'google-places' as const;
+  readonly name = "google-places" as const;
 
   constructor(
     private readonly apiKey: string,
@@ -163,11 +174,11 @@ export class GooglePlacesProvider implements PlacesProvider {
     limit: number;
   }): Promise<WaitPlace[]> {
     const res = await fetch(SEARCH_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': this.apiKey,
-        'X-Goog-FieldMask': FIELD_MASK,
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": this.apiKey,
+        "X-Goog-FieldMask": FIELD_MASK,
       },
       body: JSON.stringify({
         includedTypes: INCLUDED_TYPES,
@@ -182,14 +193,18 @@ export class GooglePlacesProvider implements PlacesProvider {
       signal: AbortSignal.timeout(12_000),
     });
     if (!res.ok) {
-      throw new Error(`Google Places returned HTTP ${res.status}: ${await res.text()}`);
+      throw new Error(
+        `Google Places returned HTTP ${res.status}: ${await res.text()}`,
+      );
     }
     const json = (await res.json()) as { places?: GooglePlace[] };
     const now = this.nowMs();
-    return (json.places ?? [])
-      .map((p) => mapGooglePlace(p, now))
-      .filter((p): p is WaitPlace => p !== null)
-      // A permanently closed venue is never a candidate.
-      .filter((p) => p.businessStatus !== 'CLOSED_PERMANENTLY');
+    return (
+      (json.places ?? [])
+        .map((p) => mapGooglePlace(p, now))
+        .filter((p): p is WaitPlace => p !== null)
+        // A permanently closed venue is never a candidate.
+        .filter((p) => p.businessStatus !== "CLOSED_PERMANENTLY")
+    );
   }
 }

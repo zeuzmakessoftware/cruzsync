@@ -11,11 +11,22 @@
  *  2. Sponsorship cannot buy feasibility or rank. The `sponsored` flag is carried
  *     through for disclosure only and contributes exactly zero to the score.
  */
-import { DEFAULTS } from '@/lib/domain';
-import { formatClock } from '@/lib/gtfs/time';
-import { calculateSafeWait, estimateWalkSeconds } from '@/lib/engine/safewait';
-import { closingTimeMinutes, formatMinutes, isOpenThrough, minutesOfDay } from './hours';
-import type { PlaceFilters, Tristate, WaitCandidate, WaitPlace, WalkEstimate } from './types';
+import { DEFAULTS } from "@/lib/domain";
+import { formatClock } from "@/lib/gtfs/time";
+import { calculateSafeWait, estimateWalkSeconds } from "@/lib/engine/safewait";
+import {
+  closingTimeMinutes,
+  formatMinutes,
+  isOpenThrough,
+  minutesOfDay,
+} from "./hours";
+import type {
+  PlaceFilters,
+  Tristate,
+  WaitCandidate,
+  WaitPlace,
+  WalkEstimate,
+} from "./types";
 
 export interface RankInput {
   places: WaitPlace[];
@@ -43,10 +54,14 @@ function checkFilter(
   if (!required) return true;
   if (value === true) return true;
   if (value === false) {
-    blocked.push(`You asked for ${label}, and this place is recorded as not having it.`);
+    blocked.push(
+      `You asked for ${label}, and this place is recorded as not having it.`,
+    );
     return false;
   }
-  warnings.push(`${label}: not recorded in the data source, so this is unconfirmed.`);
+  warnings.push(
+    `${label}: not recorded in the data source, so this is unconfirmed.`,
+  );
   return true;
 }
 
@@ -59,11 +74,11 @@ export function rankWaitPlaces(input: RankInput): WaitCandidate[] {
     const warnings: string[] = [];
     const reasons: string[] = [];
 
-    if (place.businessStatus === 'CLOSED_PERMANENTLY') {
+    if (place.businessStatus === "CLOSED_PERMANENTLY") {
       continue; // never worth showing
     }
-    if (place.businessStatus === 'CLOSED_TEMPORARILY') {
-      blockedReasons.push('Reported as temporarily closed.');
+    if (place.businessStatus === "CLOSED_TEMPORARILY") {
+      blockedReasons.push("Reported as temporarily closed.");
     }
 
     const walk =
@@ -72,7 +87,7 @@ export function rankWaitPlaces(input: RankInput): WaitCandidate[] {
         ...estimateWalkSeconds(place, input.boardingStop, {
           reducedMobility: input.reducedMobility,
         }),
-        provider: 'haversine-estimate' as const,
+        provider: "haversine-estimate" as const,
       } satisfies WalkEstimate);
 
     const safe = calculateSafeWait({
@@ -86,17 +101,22 @@ export function rankWaitPlaces(input: RankInput): WaitCandidate[] {
 
     const leaveByMin = minutesOfDay(safe.leaveByMs);
     // Handle a leave-by that lands after midnight relative to now.
-    const adjustedLeaveByMin = leaveByMin < nowMin ? leaveByMin + 24 * 60 : leaveByMin;
-    const openThroughLeaveBy = isOpenThrough(place.hours, nowMin, adjustedLeaveByMin);
+    const adjustedLeaveByMin =
+      leaveByMin < nowMin ? leaveByMin + 24 * 60 : leaveByMin;
+    const openThroughLeaveBy = isOpenThrough(
+      place.hours,
+      nowMin,
+      adjustedLeaveByMin,
+    );
 
     if (openThroughLeaveBy === false) {
       const closes = closingTimeMinutes(place.hours, nowMin);
       blockedReasons.push(
         closes !== null
           ? `Closes at ${formatMinutes(closes)}, before you would need to leave at ${formatClock(safe.leaveByMs)}.`
-          : 'Closed at this time today.',
+          : "Closed at this time today.",
       );
-    } else if (openThroughLeaveBy === 'unknown') {
+    } else if (openThroughLeaveBy === "unknown") {
       warnings.push(
         place.hours?.raw
           ? `Opening hours could not be interpreted reliably ("${place.hours.raw}"), so CruzSync cannot confirm it stays open until ${formatClock(safe.leaveByMs)}.`
@@ -107,28 +127,69 @@ export function rankWaitPlaces(input: RankInput): WaitCandidate[] {
     let matchesFilters = true;
     const f = input.filters;
     matchesFilters =
-      checkFilter(f.requireFree, place.freeToEnter, 'somewhere free to sit', blockedReasons, warnings) && matchesFilters;
+      checkFilter(
+        f.requireFree,
+        place.freeToEnter,
+        "somewhere free to sit",
+        blockedReasons,
+        warnings,
+      ) && matchesFilters;
     matchesFilters =
-      checkFilter(f.requireIndoor, place.isIndoor, 'somewhere indoors', blockedReasons, warnings) && matchesFilters;
+      checkFilter(
+        f.requireIndoor,
+        place.isIndoor,
+        "somewhere indoors",
+        blockedReasons,
+        warnings,
+      ) && matchesFilters;
     matchesFilters =
-      checkFilter(f.requireQuiet, place.isQuiet, 'somewhere quiet', blockedReasons, warnings) && matchesFilters;
+      checkFilter(
+        f.requireQuiet,
+        place.isQuiet,
+        "somewhere quiet",
+        blockedReasons,
+        warnings,
+      ) && matchesFilters;
     matchesFilters =
-      checkFilter(f.requireWifi, place.hasWifi, 'Wi-Fi', blockedReasons, warnings) && matchesFilters;
+      checkFilter(
+        f.requireWifi,
+        place.hasWifi,
+        "Wi-Fi",
+        blockedReasons,
+        warnings,
+      ) && matchesFilters;
     matchesFilters =
-      checkFilter(f.requireFood, place.servesFood, 'food', blockedReasons, warnings) && matchesFilters;
+      checkFilter(
+        f.requireFood,
+        place.servesFood,
+        "food",
+        blockedReasons,
+        warnings,
+      ) && matchesFilters;
     matchesFilters =
-      checkFilter(f.requireRestroom, place.hasRestroom, 'a restroom', blockedReasons, warnings) && matchesFilters;
+      checkFilter(
+        f.requireRestroom,
+        place.hasRestroom,
+        "a restroom",
+        blockedReasons,
+        warnings,
+      ) && matchesFilters;
     matchesFilters =
       checkFilter(
         f.requireWheelchairAccess,
         place.wheelchairAccessible,
-        'step-free access',
+        "step-free access",
         blockedReasons,
         warnings,
       ) && matchesFilters;
 
-    if (f.maxSpendUsd !== null && place.priceLevel !== null && place.priceLevel > 2 && f.maxSpendUsd < 15) {
-      blockedReasons.push('Likely to cost more than your stated budget.');
+    if (
+      f.maxSpendUsd !== null &&
+      place.priceLevel !== null &&
+      place.priceLevel > 2 &&
+      f.maxSpendUsd < 15
+    ) {
+      blockedReasons.push("Likely to cost more than your stated budget.");
       matchesFilters = false;
     }
 
@@ -141,24 +202,29 @@ export function rankWaitPlaces(input: RankInput): WaitCandidate[] {
 
     // The hard gate. 'unknown' hours are explicitly NOT treated as open.
     const feasible =
-      blockedReasons.length === 0 && enoughUsableTime && matchesFilters && openThroughLeaveBy === true;
+      blockedReasons.length === 0 &&
+      enoughUsableTime &&
+      matchesFilters &&
+      openThroughLeaveBy === true;
 
     const closes = closingTimeMinutes(place.hours, nowMin);
     reasons.push(
-      `${Math.round(walk.seconds / 60)}-minute ${walk.estimated ? 'estimated' : 'verified'} walk back to ${input.boardingStop.name}.`,
+      `${Math.round(walk.seconds / 60)}-minute ${walk.estimated ? "estimated" : "verified"} walk back to ${input.boardingStop.name}.`,
     );
     if (closes !== null) reasons.push(`Open until ${formatMinutes(closes)}.`);
     reasons.push(`${Math.round(safe.usableWaitSeconds / 60)} usable minutes.`);
     if (place.sponsored) {
-      reasons.push('Sponsored listing — this does not affect whether it is feasible or how it ranks.');
+      reasons.push(
+        "Sponsored listing — this does not affect whether it is feasible or how it ranks.",
+      );
     }
 
     // Lower is better. Composed only of rider-relevant factors.
     let score = walk.seconds; // closer is better
     score -= Math.min(safe.usableWaitSeconds, 45 * 60) * 0.35; // more usable time is better
-    if (openThroughLeaveBy === 'unknown') score += 900; // unverified hours are a real cost
+    if (openThroughLeaveBy === "unknown") score += 900; // unverified hours are a real cost
     if (f.preferLocallyOwned && place.locallyOwned === true) score -= 240;
-    if (place.hours?.source === 'google-places') score -= 60; // fresher hours
+    if (place.hours?.source === "google-places") score -= 60; // fresher hours
     // Deliberately absent: any term involving `place.sponsored`.
 
     candidates.push({
@@ -173,22 +239,31 @@ export function rankWaitPlaces(input: RankInput): WaitCandidate[] {
       blockedReasons,
       summary: [
         `${Math.round(walk.seconds / 60)}-min walk`,
-        closes !== null ? `open until ${formatMinutes(closes)}` : 'hours unknown',
+        closes !== null
+          ? `open until ${formatMinutes(closes)}`
+          : "hours unknown",
         `${Math.round(safe.usableWaitSeconds / 60)} usable minutes`,
-      ].join(', '),
+      ].join(", "),
       score: Math.round(score),
     });
   }
 
   // Feasible first, each group sorted by score. Infeasible ones are retained so
   // the UI can explain why they were rejected rather than silently dropping them.
-  const feasible = candidates.filter((c) => c.feasible).sort((a, b) => a.score - b.score);
-  const rest = candidates.filter((c) => !c.feasible).sort((a, b) => a.score - b.score);
+  const feasible = candidates
+    .filter((c) => c.feasible)
+    .sort((a, b) => a.score - b.score);
+  const rest = candidates
+    .filter((c) => !c.feasible)
+    .sort((a, b) => a.score - b.score);
   return [...feasible, ...rest];
 }
 
 /** The always-available fallback when nothing can be safely recommended. */
-export function stayNearStopAdvice(boardingStopName: string, reason: string): string {
+export function stayNearStopAdvice(
+  boardingStopName: string,
+  reason: string,
+): string {
   return `Stay near ${boardingStopName}. ${reason} With less certainty than that, the safe call is to keep the stop in sight rather than risk the connection.`;
 }
 

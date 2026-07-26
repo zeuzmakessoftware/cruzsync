@@ -20,7 +20,7 @@ Before writing any product logic I read the real Santa Cruz METRO feed (GTFS `S1
 findings shaped everything:
 
 **The three "RiverFront areas" are three distinct stops**, roughly 100 m apart. Route 35 arrives
-at and departs from Area 2 (`1466`). Routes 11/18/19 *depart* from Area 1 (`1726`) and *return*
+at and departs from Area 2 (`1466`). Routes 11/18/19 _depart_ from Area 1 (`1726`) and _return_
 to Area 3 (`1594`), because they run as downtown → campus → downtown loops. Collapsing these
 into one stop would erase the inter-area walk that every transfer margin depends on.
 
@@ -59,18 +59,18 @@ CruzSync calls **`gemma-4-31b-it`** on the Gemini API
 (`generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`) using **native
 function calling**. Worth flagging for anyone building on this: the Gemini API serves exactly
 two Gemma 4 models — `gemma-4-31b-it` and `gemma-4-26b-a4b-it`. Ids like `gemma-4-12b-it` exist
-on Hugging Face but are *not* callable there. CruzSync validates the configured id and explains
+on Hugging Face but are _not_ callable there. CruzSync validates the configured id and explains
 the mismatch rather than surfacing an opaque 404. Gemma on this endpoint also has no separate
 system-instruction slot, so the system prompt leads the conversation as the first turn.
 
 The twelve tools are defined once as Zod schemas. Those schemas generate the JSON Schema sent
-as `functionDeclarations` *and* validate arguments at runtime, so the model's contract and our
+as `functionDeclarations` _and_ validate arguments at runtime, so the model's contract and our
 validation cannot drift. Results are validated too — a tool returning the wrong shape fails
 loudly rather than corrupting a journey deep inside the UI. Invalid arguments come back to the
 model as structured errors so it can correct itself.
 
 Gemma's job is genuinely agentic: choose which evidence to gather, notice when the destination
-is missing and ask, then explain. Its job is explicitly *not* arithmetic. The system prompt
+is missing and ask, then explain. Its job is explicitly _not_ arithmetic. The system prompt
 forbids adding times, computing headways or deriving leave-by times in free text. Every number
 is quoted from a tool result.
 
@@ -90,7 +90,7 @@ from an invisible bus, simply didn't happen.
 The tempting fix was to inflate the penalty until the story worked. That would have been
 rigging the demo.
 
-The honest fix was recognising the penalty had the wrong *shape*. Not seeing a bus matters
+The honest fix was recognising the penalty had the wrong _shape_. Not seeing a bus matters
 enormously when the fallback is 25 minutes later and barely at all when another follows four
 minutes behind. So evidence risk is now priced against the genuinely next-best arrival from the
 timetable: `(1 − confidence) × (fallback_arrival − this_arrival)`.
@@ -103,8 +103,8 @@ sometimes "wait for the 11 anyway" is genuinely correct, and the app says that t
 ## Honesty rules, enforced in code
 
 - **A missing vehicle is not a cancellation.** CruzSync may only say "cancelled" when the feed
-  publishes `scheduleRelationship: CANCELED`. Otherwise: *"No current vehicle position is
-  visible for this trip"*, plus what that does and doesn't mean.
+  publishes `scheduleRelationship: CANCELED`. Otherwise: _"No current vehicle position is
+  visible for this trip"_, plus what that does and doesn't mean.
 - **Amenities are `true | false | 'unknown'`** — never inferred from category. A café isn't
   automatically quiet; a bookshop doesn't automatically have a restroom. A wheelchair user
   acting on an invented accessibility claim is a real person having a bad evening.
@@ -116,8 +116,8 @@ sometimes "wait for the 11 anyway" is genuinely correct, and the app says that t
 - **Sponsorship contributes exactly zero** to feasibility or rank. A test asserts two otherwise
   identical venues score identically.
 - **Demo data is never dressed as live.** Every snapshot carries `origin: live | cache |
-  fixture`, rendered on the header, the recommendation, and every trace row.
-- **No chain-of-thought.** The trace shows what the agent *did*: tool, redacted arguments,
+fixture`, rendered on the header, the recommendation, and every trace row.
+- **No chain-of-thought.** The trace shows what the agent _did_: tool, redacted arguments,
   duration, source, timestamp, summary.
 
 ## Challenges

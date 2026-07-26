@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
-import { CAMPUS_DESTINATIONS, RIVERFRONT } from '@/lib/domain';
-import { Button, Card, Chip, Empty, Spinner } from './ui';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { CAMPUS_DESTINATIONS, RIVERFRONT } from "@/lib/domain";
+import { Button, Card, Chip, Empty, Spinner } from "./ui";
 import {
   CivicDashboard,
   JourneyTimeline,
@@ -17,15 +17,22 @@ import {
   type PlaceView,
   type Recommendation,
   type TraceEntryView,
-} from './panels';
-import type { MapShape } from './NetworkMap';
-import type { NormalisedVehicle, RealtimeSnapshot } from '@/lib/rt/types';
+} from "./panels";
+import type { MapShape } from "./NetworkMap";
+import type { NormalisedVehicle, RealtimeSnapshot } from "@/lib/rt/types";
 
 // Leaflet touches window on import, so it must not render on the server.
-const NetworkMap = dynamic(() => import('./NetworkMap'), {
+const NetworkMap = dynamic(() => import("./NetworkMap"), {
   ssr: false,
   loading: () => (
-    <div style={{ display: 'grid', placeItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
+    <div
+      style={{
+        display: "grid",
+        placeItems: "center",
+        height: "100%",
+        color: "var(--text-muted)",
+      }}
+    >
       Loading map…
     </div>
   ),
@@ -35,7 +42,14 @@ interface SnapshotResponse {
   snapshot: RealtimeSnapshot;
   nowMs: number;
   sceneId: string | null;
-  scenes: { id: string; title: string; narrative: string; anchorMs: number; direction: string; campusDestinationKey: string }[];
+  scenes: {
+    id: string;
+    title: string;
+    narrative: string;
+    anchorMs: number;
+    direction: string;
+    campusDestinationKey: string;
+  }[];
   runtime: {
     gemmaMode: string;
     gemmaModel: string;
@@ -44,7 +58,13 @@ interface SnapshotResponse {
     placesProvider: string;
     modeReason: string;
   };
-  gtfs: { feedVersion: string; publisher: string; validFrom: string; validTo: string; builtAt: string };
+  gtfs: {
+    feedVersion: string;
+    publisher: string;
+    validFrom: string;
+    validTo: string;
+    builtAt: string;
+  };
   placesFixture: { generatedAt: string; source: string; count: number };
 }
 
@@ -62,19 +82,19 @@ interface AgentResponse {
 }
 
 const clock = (ms: number) =>
-  new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    hour: 'numeric',
-    minute: '2-digit',
+  new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(new Date(ms));
 
 export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   const [demo, setDemo] = useState(true);
-  const [sceneId, setSceneId] = useState('outbound-11-wins');
-  const [destination, setDestination] = useState('science-hill');
+  const [sceneId, setSceneId] = useState("outbound-11-wins");
+  const [destination, setDestination] = useState("science-hill");
   const [snap, setSnap] = useState<SnapshotResponse | null>(null);
   const [agent, setAgent] = useState<AgentResponse | null>(null);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [snapError, setSnapError] = useState<string | null>(null);
@@ -82,7 +102,7 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   const [chosenRoute, setChosenRoute] = useState<string | null>(null);
   const [pickedPlace, setPickedPlace] = useState<string | null>(null);
   const [sessionEvents, setSessionEvents] = useState<CivicEvent[]>([]);
-  const [theme, setTheme] = useState<'auto' | 'light' | 'dark'>('auto');
+  const [theme, setTheme] = useState<"auto" | "light" | "dark">("auto");
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [recheckedAt, setRecheckedAt] = useState<string | null>(null);
@@ -97,7 +117,9 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
    * component impure.
    */
   const [nowMs, setNowMs] = useState(0);
-  const baseRef = useRef<{ sceneNowMs: number; localAtMs: number } | null>(null);
+  const baseRef = useRef<{ sceneNowMs: number; localAtMs: number } | null>(
+    null,
+  );
 
   /** Wall-clock ms since the current scene was loaded. Handlers only. */
   const elapsedSinceLoad = useCallback(
@@ -114,8 +136,9 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   }, []);
 
   useEffect(() => {
-    if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', theme);
+    if (theme === "auto")
+      document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
   const loadSnapshot = useCallback(
@@ -125,9 +148,10 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           demo: String(demo),
           elapsedMs: String(resetClock ? 0 : elapsedSinceLoad()),
         });
-        if (demo) q.set('scene', sceneId);
+        if (demo) q.set("scene", sceneId);
         const res = await fetch(`/api/snapshot?${q}`);
-        if (!res.ok) throw new Error((await res.json()).error ?? `HTTP ${res.status}`);
+        if (!res.ok)
+          throw new Error((await res.json()).error ?? `HTTP ${res.status}`);
         const json: SnapshotResponse = await res.json();
         // Re-anchor the clock from a handler, not from render.
         baseRef.current = { sceneNowMs: json.nowMs, localAtMs: Date.now() };
@@ -135,7 +159,9 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
         setNowMs(json.nowMs);
         setSnapError(null);
       } catch (e) {
-        setSnapError(e instanceof Error ? e.message : 'Could not load transit data.');
+        setSnapError(
+          e instanceof Error ? e.message : "Could not load transit data.",
+        );
       }
     },
     [demo, sceneId, elapsedSinceLoad],
@@ -177,8 +203,8 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   }, [demo, loadSnapshot]);
 
   const scene = snap?.scenes.find((s) => s.id === sceneId);
-  const direction: 'to-campus' | 'to-home' =
-    (scene?.direction as 'to-campus' | 'to-home') ?? 'to-campus';
+  const direction: "to-campus" | "to-home" =
+    (scene?.direction as "to-campus" | "to-home") ?? "to-campus";
 
   const ask = useCallback(
     async (message: string) => {
@@ -186,9 +212,9 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
       setBusy(true);
       setError(null);
       try {
-        const res = await fetch('/api/agent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message,
             direction,
@@ -205,7 +231,9 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
         // than the operator's real wall-clock time.
         setRecheckedAt(new Date(json.nowMs).toISOString());
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'The agent could not be reached.');
+        setError(
+          e instanceof Error ? e.message : "The agent could not be reached.",
+        );
       } finally {
         setBusy(false);
       }
@@ -216,15 +244,33 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   /* --- derived views from the tool results --- */
 
   const comparison = useMemo(() => {
-    const r = agent?.toolResults.find((t) => t.tool === 'compare_ucsc_options')?.result as
-      | { options: ComparisonOption[]; bestRouteId: string | null; destinationName: string; undecidedReason: string | null }
+    const r = agent?.toolResults.find((t) => t.tool === "compare_ucsc_options")
+      ?.result as
+      | {
+          options: ComparisonOption[];
+          bestRouteId: string | null;
+          destinationName: string;
+          undecidedReason: string | null;
+        }
       | undefined;
     return r;
   }, [agent]);
 
   const trip = useMemo(() => {
-    return agent?.toolResults.find((t) => t.tool === 'build_multileg_trip')?.result as
-      | { legs: { kind: string; routeId?: string; label: string; fromStopName: string; toStopName: string; departureIso: string; arrivalIso: string }[]; downtownTransferMarginSec: number | null }
+    return agent?.toolResults.find((t) => t.tool === "build_multileg_trip")
+      ?.result as
+      | {
+          legs: {
+            kind: string;
+            routeId?: string;
+            label: string;
+            fromStopName: string;
+            toStopName: string;
+            departureIso: string;
+            arrivalIso: string;
+          }[];
+          downtownTransferMarginSec: number | null;
+        }
       | undefined;
   }, [agent]);
 
@@ -240,17 +286,20 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
       | { waitPlaces?: PlaceView[] | null; fallbackAdvice?: string | null }
       | undefined;
     if (rec?.waitPlaces && rec.waitPlaces.length > 0) {
-      return { places: rec.waitPlaces, fallbackAdvice: rec.fallbackAdvice ?? null };
+      return {
+        places: rec.waitPlaces,
+        fallbackAdvice: rec.fallbackAdvice ?? null,
+      };
     }
-    return agent?.toolResults.find((t) => t.tool === 'get_nearby_wait_places')?.result as
-      | { places: PlaceView[]; fallbackAdvice: string | null }
-      | undefined;
+    return agent?.toolResults.find((t) => t.tool === "get_nearby_wait_places")
+      ?.result as
+      { places: PlaceView[]; fallbackAdvice: string | null } | undefined;
   }, [agent]);
 
   const observedTripIds = useMemo(() => {
     const ids: string[] = [];
     for (const o of comparison?.options ?? []) {
-      if (o.evidence?.label === 'observed' && o.tripId) ids.push(o.tripId);
+      if (o.evidence?.label === "observed" && o.tripId) ids.push(o.tripId);
     }
     return ids;
   }, [comparison]);
@@ -258,7 +307,7 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   const vehicles: NormalisedVehicle[] = snap?.snapshot.vehicles ?? [];
   const freshness = snap?.snapshot.freshness;
   const origin = snap?.snapshot.origin;
-  const isDemoData = origin === 'fixture';
+  const isDemoData = origin === "fixture";
 
   const recordGhostReport = useCallback(() => {
     const opt = comparison?.options.find((o) => !o.evidence?.vehicleVisible);
@@ -267,11 +316,12 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
     setSessionEvents((prev) => [
       {
         id: `sess-${Date.now()}`,
-        routeId: opt?.routeId ?? '11',
+        routeId: opt?.routeId ?? "11",
         stopLabel: RIVERFRONT.AREA_1.label,
-        expectedIso: opt?.evidence?.predictedDepartureIso ?? new Date(nowMs).toISOString(),
-        kind: 'ghost-bus-report',
-        note: 'Rider reported the bus did not arrive; no vehicle position was published for this trip.',
+        expectedIso:
+          opt?.evidence?.predictedDepartureIso ?? new Date(nowMs).toISOString(),
+        kind: "ghost-bus-report",
+        note: "Rider reported the bus did not arrive; no vehicle position was published for this trip.",
         isFixture: false,
       },
       ...prev,
@@ -291,8 +341,8 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
         routeId: o.routeId,
         stopLabel: RIVERFRONT.AREA_1.label,
         expectedIso: o.evidence!.predictedDepartureIso,
-        kind: 'no-vehicle-evidence' as const,
-        note: 'No current vehicle position was visible when this decision was made.',
+        kind: "no-vehicle-evidence" as const,
+        note: "No current vehicle position was visible when this decision was made.",
         isFixture: isDemoData,
       }));
     return [...sessionEvents, ...derived];
@@ -306,7 +356,9 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
     };
     const Ctor = W.SpeechRecognition ?? W.webkitSpeechRecognition;
     if (!Ctor) {
-      setError('Speech input is not supported in this browser. Please type instead.');
+      setError(
+        "Speech input is not supported in this browser. Please type instead.",
+      );
       return;
     }
     const rec = new Ctor() as unknown as {
@@ -317,7 +369,7 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
       onend: () => void;
       start: () => void;
     };
-    rec.lang = 'en-US';
+    rec.lang = "en-US";
     rec.interimResults = false;
     rec.onresult = (e) => {
       const text = e.results[0][0].transcript;
@@ -331,14 +383,14 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   }, []);
 
   const suggestions =
-    direction === 'to-campus'
+    direction === "to-campus"
       ? [
           "I'm on the 35 from Scotts Valley. Which bus should I transfer to for campus?",
-          'Which of the 11, 18 or 19 gets me to Science Hill soonest?',
+          "Which of the 11, 18 or 19 gets me to Science Hill soonest?",
         ]
       : [
-          'The next 35 is ages away — where can I hang out without missing it?',
-          'Somewhere quiet and indoors near the stop, please.',
+          "The next 35 is ages away — where can I hang out without missing it?",
+          "Somewhere quiet and indoors near the stop, please.",
         ];
 
   return (
@@ -349,52 +401,87 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
 
       <header
         style={{
-          position: 'sticky',
+          position: "sticky",
           top: 0,
           zIndex: 20,
-          background: 'var(--surface)',
-          borderBottom: '1px solid var(--border)',
-          padding: '0.7rem clamp(0.75rem,3vw,1.5rem)',
+          background: "var(--surface)",
+          borderBottom: "1px solid var(--border)",
+          padding: "0.7rem clamp(0.75rem,3vw,1.5rem)",
         }}
       >
         <div
           style={{
             maxWidth: 1280,
-            margin: '0 auto',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            flexWrap: 'wrap',
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            flexWrap: "wrap",
           }}
         >
-          <div style={{ flex: '1 1 16rem', minWidth: 0 }}>
-            <h1 style={{ margin: 0, fontSize: '1.35rem', letterSpacing: '-0.02em' }}>
-              Cruz<span style={{ color: 'var(--accent)' }}>Sync</span>
+          <div style={{ flex: "1 1 16rem", minWidth: 0 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "1.35rem",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Cruz<span style={{ color: "var(--accent)" }}>Sync</span>
             </h1>
-            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "0.82rem",
+                color: "var(--text-muted)",
+              }}
+            >
               Know what to take. Know where to wait.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <Chip tone={snap?.runtime.gemmaMode === 'live-gemma' ? 'good' : 'demo'} title={snap?.runtime.modeReason}>
-              {snap?.runtime.gemmaMode === 'live-gemma'
+          <div
+            style={{
+              display: "flex",
+              gap: "0.4rem",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <Chip
+              tone={snap?.runtime.gemmaMode === "live-gemma" ? "good" : "demo"}
+              title={snap?.runtime.modeReason}
+            >
+              {snap?.runtime.gemmaMode === "live-gemma"
                 ? `Live Gemma · ${snap.runtime.gemmaModel}`
-                : 'Deterministic Demo'}
+                : "Deterministic Demo"}
             </Chip>
             <Chip
               tone={
-                isDemoData ? 'demo' : freshness?.label === 'fresh' ? 'good' : freshness?.label === 'stale' ? 'warn' : 'bad'
+                isDemoData
+                  ? "demo"
+                  : freshness?.label === "fresh"
+                    ? "good"
+                    : freshness?.label === "stale"
+                      ? "warn"
+                      : "bad"
               }
               title={snap?.snapshot.degradedReason}
             >
               {isDemoData
-                ? 'demo fixture data'
-                : origin === 'cache'
+                ? "demo fixture data"
+                : origin === "cache"
                   ? `cached ${freshness?.ageSeconds}s ago`
-                  : `live · ${freshness?.ageSeconds ?? '?'}s old`}
+                  : `live · ${freshness?.ageSeconds ?? "?"}s old`}
             </Chip>
-            <label style={{ fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <label
+              style={{
+                fontSize: "0.78rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+              }}
+            >
               <input
                 type="checkbox"
                 checked={demo}
@@ -408,15 +495,17 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
             </label>
             <select
               value={theme}
-              onChange={(e) => setTheme(e.target.value as 'auto' | 'light' | 'dark')}
+              onChange={(e) =>
+                setTheme(e.target.value as "auto" | "light" | "dark")
+              }
               aria-label="Colour theme"
               style={{
-                fontSize: '0.78rem',
-                padding: '0.3rem',
+                fontSize: "0.78rem",
+                padding: "0.3rem",
                 borderRadius: 8,
-                background: 'var(--surface)',
-                color: 'var(--text)',
-                border: '1px solid var(--border)',
+                background: "var(--surface)",
+                color: "var(--text)",
+                border: "1px solid var(--border)",
               }}
             >
               <option value="auto">Auto theme</option>
@@ -431,20 +520,24 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
         id="main"
         style={{
           maxWidth: 1280,
-          margin: '0 auto',
-          padding: 'clamp(0.75rem,3vw,1.5rem)',
-          display: 'grid',
-          gap: '1rem',
-          gridTemplateColumns: 'minmax(0,1fr)',
+          margin: "0 auto",
+          padding: "clamp(0.75rem,3vw,1.5rem)",
+          display: "grid",
+          gap: "1rem",
+          gridTemplateColumns: "minmax(0,1fr)",
         }}
       >
         {snapError && (
           <div
             role="alert"
             className="card"
-            style={{ padding: '1rem', borderColor: 'var(--danger-700)', color: 'var(--danger-700)' }}
+            style={{
+              padding: "1rem",
+              borderColor: "var(--danger-700)",
+              color: "var(--danger-700)",
+            }}
           >
-            <strong>Transit data unavailable.</strong> {snapError}{' '}
+            <strong>Transit data unavailable.</strong> {snapError}{" "}
             <Button onClick={() => void loadSnapshot(true)}>Retry</Button>
           </div>
         )}
@@ -453,7 +546,11 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           <div
             role="status"
             className="card"
-            style={{ padding: '0.75rem 1rem', borderColor: 'var(--sunrise-300)', fontSize: '0.85rem' }}
+            style={{
+              padding: "0.75rem 1rem",
+              borderColor: "var(--sunrise-300)",
+              fontSize: "0.85rem",
+            }}
           >
             <strong>Degraded data:</strong> {snap.snapshot.degradedReason}
           </div>
@@ -461,8 +558,15 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
 
         {/* The story, in the creator's own words. */}
         {demo && scene && (
-          <section className="card" style={{ padding: '1rem 1.1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+          <section className="card" style={{ padding: "1rem 1.1rem" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                flexWrap: "wrap",
+                marginBottom: "0.6rem",
+              }}
+            >
               {snap?.scenes.map((s) => (
                 <Button
                   key={s.id}
@@ -479,26 +583,34 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
             <blockquote
               style={{
                 margin: 0,
-                paddingLeft: '0.9rem',
-                borderLeft: '4px solid var(--accent)',
-                fontSize: '1rem',
-                fontStyle: 'italic',
+                paddingLeft: "0.9rem",
+                borderLeft: "4px solid var(--accent)",
+                fontSize: "1rem",
+                fontStyle: "italic",
               }}
             >
               “{scene.narrative}”
             </blockquote>
-            <p className="tnum" style={{ margin: '0.6rem 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Demo clock: {clock(nowMs)} · Monday 20 July 2026 · every value here is demonstration data.{' '}
+            <p
+              className="tnum"
+              style={{
+                margin: "0.6rem 0 0",
+                fontSize: "0.8rem",
+                color: "var(--text-muted)",
+              }}
+            >
+              Demo clock: {clock(nowMs)} · Monday 20 July 2026 · every value
+              here is demonstration data.{" "}
               <button
                 onClick={resetScene}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--accent)',
-                  cursor: 'pointer',
+                  background: "none",
+                  border: "none",
+                  color: "var(--accent)",
+                  cursor: "pointer",
                   padding: 0,
-                  font: 'inherit',
-                  textDecoration: 'underline',
+                  font: "inherit",
+                  textDecoration: "underline",
                 }}
               >
                 Reset scene
@@ -509,18 +621,27 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
 
         <div
           style={{
-            display: 'grid',
-            gap: '1rem',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 22rem), 1fr))',
-            alignItems: 'start',
+            display: "grid",
+            gap: "1rem",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(100%, 22rem), 1fr))",
+            alignItems: "start",
           }}
         >
           {/* Map */}
-          <section className="card" style={{ overflow: 'hidden', height: 'clamp(18rem, 45vh, 26rem)' }}>
+          <section
+            className="card"
+            style={{ overflow: "hidden", height: "clamp(18rem, 45vh, 26rem)" }}
+          >
             <NetworkMap
               shapes={shapes}
               vehicles={vehicles}
-              highlightRouteIds={['35', ...(comparison?.bestRouteId ? [comparison.bestRouteId] : ['11', '18', '19'])]}
+              highlightRouteIds={[
+                "35",
+                ...(comparison?.bestRouteId
+                  ? [comparison.bestRouteId]
+                  : ["11", "18", "19"]),
+              ]}
               observedTripIds={observedTripIds}
             />
           </section>
@@ -536,7 +657,10 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 void ask(input);
               }}
             >
-              <label htmlFor="ask" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              <label
+                htmlFor="ask"
+                style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}
+              >
                 Your question
               </label>
               <textarea
@@ -546,20 +670,30 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 rows={3}
                 placeholder={suggestions[0]}
                 style={{
-                  width: '100%',
-                  marginTop: '0.3rem',
-                  padding: '0.6rem',
+                  width: "100%",
+                  marginTop: "0.3rem",
+                  padding: "0.6rem",
                   borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface-2)',
-                  color: 'var(--text)',
-                  font: 'inherit',
-                  resize: 'vertical',
+                  border: "1px solid var(--border)",
+                  background: "var(--surface-2)",
+                  color: "var(--text)",
+                  font: "inherit",
+                  resize: "vertical",
                 }}
               />
 
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.6rem 0' }}>
-                <label htmlFor="dest" style={{ fontSize: '0.8rem', alignSelf: 'center' }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.4rem",
+                  flexWrap: "wrap",
+                  margin: "0.6rem 0",
+                }}
+              >
+                <label
+                  htmlFor="dest"
+                  style={{ fontSize: "0.8rem", alignSelf: "center" }}
+                >
                   Campus destination
                 </label>
                 <select
@@ -567,35 +701,50 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
                   style={{
-                    padding: '0.4rem',
+                    padding: "0.4rem",
                     borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    background: 'var(--surface)',
-                    color: 'var(--text)',
-                    font: 'inherit',
-                    fontSize: '0.82rem',
-                    maxWidth: '100%',
+                    border: "1px solid var(--border)",
+                    background: "var(--surface)",
+                    color: "var(--text)",
+                    font: "inherit",
+                    fontSize: "0.82rem",
+                    maxWidth: "100%",
                   }}
                 >
                   {CAMPUS_DESTINATIONS.map((d) => (
                     <option key={d.key} value={d.key}>
-                      {d.name} (Route {d.servedBy.join('/')})
+                      {d.name} (Route {d.servedBy.join("/")})
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <Button type="submit" variant="primary" disabled={busy || !input.trim()}>
-                  {busy ? 'Thinking…' : 'Ask CruzSync'}
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={busy || !input.trim()}
+                >
+                  {busy ? "Thinking…" : "Ask CruzSync"}
                 </Button>
-                <Button onClick={startListening} disabled={listening} ariaLabel="Dictate your question">
-                  {listening ? '● Listening…' : '🎙 Speak'}
+                <Button
+                  onClick={startListening}
+                  disabled={listening}
+                  ariaLabel="Dictate your question"
+                >
+                  {listening ? "● Listening…" : "🎙 Speak"}
                 </Button>
               </div>
             </form>
 
-            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.7rem' }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.35rem",
+                flexWrap: "wrap",
+                marginTop: "0.7rem",
+              }}
+            >
               {suggestions.map((s) => (
                 <button
                   key={s}
@@ -604,16 +753,16 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                     void ask(s);
                   }}
                   style={{
-                    fontSize: '0.75rem',
-                    padding: '0.3rem 0.6rem',
+                    fontSize: "0.75rem",
+                    padding: "0.3rem 0.6rem",
                     borderRadius: 999,
-                    border: '1px dashed var(--border)',
-                    background: 'transparent',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    font: 'inherit',
-                    fontSizeAdjust: 'none',
+                    border: "1px dashed var(--border)",
+                    background: "transparent",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    font: "inherit",
+                    fontSizeAdjust: "none",
                   }}
                 >
                   {s}
@@ -622,13 +771,26 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
             </div>
 
             {transcript && (
-              <p style={{ margin: '0.7rem 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              <p
+                style={{
+                  margin: "0.7rem 0 0",
+                  fontSize: "0.78rem",
+                  color: "var(--text-muted)",
+                }}
+              >
                 <strong>Transcript:</strong> “{transcript}”
               </p>
             )}
             {busy && <Spinner label="Calling tools and composing an answer…" />}
             {error && (
-              <p role="alert" style={{ margin: '0.6rem 0 0', color: 'var(--danger-700)', fontSize: '0.85rem' }}>
+              <p
+                role="alert"
+                style={{
+                  margin: "0.6rem 0 0",
+                  color: "var(--danger-700)",
+                  fontSize: "0.85rem",
+                }}
+              >
                 {error}
               </p>
             )}
@@ -647,21 +809,34 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
 
         {agent && (
           <Card title="What CruzSync says">
-            <p style={{ margin: 0, fontSize: '0.95rem', whiteSpace: 'pre-wrap' }}>{agent.message}</p>
-            <p style={{ margin: '0.7rem 0 0', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              Explanation produced by{' '}
-              {agent.explanationMode === 'live-gemma'
+            <p
+              style={{ margin: 0, fontSize: "0.95rem", whiteSpace: "pre-wrap" }}
+            >
+              {agent.message}
+            </p>
+            <p
+              style={{
+                margin: "0.7rem 0 0",
+                fontSize: "0.72rem",
+                color: "var(--text-muted)",
+              }}
+            >
+              Explanation produced by{" "}
+              {agent.explanationMode === "live-gemma"
                 ? `${agent.model} (live)`
-                : agent.explanationMode === 'deterministic-fallback'
+                : agent.explanationMode === "deterministic-fallback"
                   ? `the deterministic composer after ${agent.model} failed`
-                  : 'the deterministic composer — no language model was called'}
+                  : "the deterministic composer — no language model was called"}
               . Engine v{agent.engineVersion}.
             </p>
           </Card>
         )}
 
         {trip && trip.legs.length > 0 && (
-          <JourneyTimeline legs={trip.legs} transferMarginSec={trip.downtownTransferMarginSec} />
+          <JourneyTimeline
+            legs={trip.legs}
+            transferMarginSec={trip.downtownTransferMarginSec}
+          />
         )}
 
         {comparison && (
@@ -689,18 +864,21 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           <NotificationPreviews
             leaveByIso={agent.recommendation.leaveByIso}
             nowMs={nowMs}
-            boardingLabel={agent.recommendation.boardingStopLabel ?? RIVERFRONT.AREA_2.label}
+            boardingLabel={
+              agent.recommendation.boardingStopLabel ?? RIVERFRONT.AREA_2.label
+            }
             recheckedAt={recheckedAt}
           />
         )}
 
         {(chosenAction || chosenRoute || pickedPlace) && (
           <Card title="Monitoring">
-            <p style={{ margin: 0, fontSize: '0.9rem' }}>
+            <p style={{ margin: 0, fontSize: "0.9rem" }}>
               {chosenRoute && <>You chose Route {chosenRoute}. </>}
               {pickedPlace && <>You are waiting at a place. </>}
-              CruzSync will keep watching this journey and will re-check the bus before each
-              notification. Ask again at any time to force a fresh evaluation.
+              CruzSync will keep watching this journey and will re-check the bus
+              before each notification. Ask again at any time to force a fresh
+              evaluation.
             </p>
           </Card>
         )}
@@ -716,26 +894,40 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
 
         {!agent && !busy && (
           <Empty>
-            Ask a question above to see the recommendation, the 11/18/19 comparison, the evidence,
-            and the full tool trace.
+            Ask a question above to see the recommendation, the 11/18/19
+            comparison, the evidence, and the full tool trace.
           </Empty>
         )}
 
         <CivicDashboard events={events} onReport={recordGhostReport} />
 
-        <footer style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '0.5rem 0 2rem' }}>
-          <p style={{ margin: '0 0 0.35rem' }}>
-            Transit data © Santa Cruz METRO (GTFS {snap?.gtfs.feedVersion ?? '—'}, valid{' '}
-            {snap?.gtfs.validFrom} – {snap?.gtfs.validTo}). Place data ©{' '}
-            <a href="https://www.openstreetmap.org/copyright" style={{ color: 'var(--accent)' }}>
+        <footer
+          style={{
+            fontSize: "0.72rem",
+            color: "var(--text-muted)",
+            padding: "0.5rem 0 2rem",
+          }}
+        >
+          <p style={{ margin: "0 0 0.35rem" }}>
+            Transit data © Santa Cruz METRO (GTFS{" "}
+            {snap?.gtfs.feedVersion ?? "—"}, valid {snap?.gtfs.validFrom} –{" "}
+            {snap?.gtfs.validTo}). Place data ©{" "}
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              style={{ color: "var(--accent)" }}
+            >
               OpenStreetMap
-            </a>{' '}
+            </a>{" "}
             contributors (ODbL). Map tiles © OpenStreetMap.
           </p>
           <p style={{ margin: 0 }}>
-            CruzSync is an independent student project for the Cruz Into the Gemmaverse hackathon. It
-            is <strong>not affiliated with, endorsed by, or operated by Santa Cruz METRO</strong>, and
-            it is rider decision support only — never an official source of service information.
+            CruzSync is an independent student project for the Cruz Into the
+            Gemmaverse hackathon. It is{" "}
+            <strong>
+              not affiliated with, endorsed by, or operated by Santa Cruz METRO
+            </strong>
+            , and it is rider decision support only — never an official source
+            of service information.
           </p>
         </footer>
       </main>

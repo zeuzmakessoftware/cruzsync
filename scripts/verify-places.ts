@@ -8,24 +8,24 @@
  *
  * Usage: npm run places:verify
  */
-import { writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { OverpassProvider } from '../src/lib/places/overpass';
-import { RIVERFRONT } from '../src/lib/domain';
-import type { WaitPlace } from '../src/lib/places/types';
+import { writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { OverpassProvider } from "../src/lib/places/overpass";
+import { RIVERFRONT } from "../src/lib/domain";
+import type { WaitPlace } from "../src/lib/places/types";
 
 /** The venues named in the brief, to be confirmed rather than assumed. */
 const SEED_NAMES = [
-  'Abbott Square',
-  'Bookshop Santa Cruz',
-  'Santa Cruz Coffee Roasting',
-  'Verve Coffee',
-  'Mariposa',
+  "Abbott Square",
+  "Bookshop Santa Cruz",
+  "Santa Cruz Coffee Roasting",
+  "Verve Coffee",
+  "Mariposa",
 ];
 
 async function main() {
   const provider = new OverpassProvider();
-  console.log('Querying OpenStreetMap around RiverFront Area 2 ...');
+  console.log("Querying OpenStreetMap around RiverFront Area 2 ...");
   const places = await provider.search({
     lat: RIVERFRONT.AREA_2.lat,
     lon: RIVERFRONT.AREA_2.lon,
@@ -36,13 +36,19 @@ async function main() {
 
   const matched: WaitPlace[] = [];
   for (const seed of SEED_NAMES) {
-    const hit = places.find((p) => p.name.toLowerCase().includes(seed.toLowerCase()));
+    const hit = places.find((p) =>
+      p.name.toLowerCase().includes(seed.toLowerCase()),
+    );
     if (hit) {
       matched.push(hit);
-      const hrs = hit.hours?.raw ?? '(no opening_hours published)';
-      console.log(`  FOUND    ${seed.padEnd(28)} -> "${hit.name}"  hours: ${hrs}`);
+      const hrs = hit.hours?.raw ?? "(no opening_hours published)";
+      console.log(
+        `  FOUND    ${seed.padEnd(28)} -> "${hit.name}"  hours: ${hrs}`,
+      );
     } else {
-      console.log(`  MISSING  ${seed.padEnd(28)} -> not present in OSM within 700 m`);
+      console.log(
+        `  MISSING  ${seed.padEnd(28)} -> not present in OSM within 700 m`,
+      );
     }
   }
 
@@ -59,11 +65,15 @@ async function main() {
     _comment:
       'DEMO FIXTURE. Snapshot of OpenStreetMap data captured at generatedAt. Opening hours are point-in-time and may be stale or missing; CruzSync treats unverified hours as unknown and will not issue a confident "safe to visit" recommendation from them.',
     generatedAt: new Date().toISOString(),
-    source: 'OpenStreetMap via Overpass API, (c) OpenStreetMap contributors, ODbL',
-    anchor: { stopId: RIVERFRONT.AREA_2.stopId, label: RIVERFRONT.AREA_2.label },
+    source:
+      "OpenStreetMap via Overpass API, (c) OpenStreetMap contributors, ODbL",
+    anchor: {
+      stopId: RIVERFRONT.AREA_2.stopId,
+      label: RIVERFRONT.AREA_2.label,
+    },
     places: all,
   };
-  const path = resolve(process.cwd(), 'fixtures/places.generated.json');
+  const path = resolve(process.cwd(), "fixtures/places.generated.json");
   writeFileSync(path, JSON.stringify(out, null, 2));
   console.log(`\nWrote ${path} (${all.length} places)`);
 }

@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 /**
  * CruzSync visual language.
@@ -60,7 +60,7 @@
 }
 
 /* The in-app theme toggle stamps data-theme on the root and must win both ways. */
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   --bg: var(--pacific-950);
   --surface: #072a3b;
   --surface-2: #0a3448;
@@ -71,7 +71,7 @@
   --accent-contrast: #04212f;
 }
 
-:root[data-theme='light'] {
+:root[data-theme="light"] {
   --bg: var(--sand-50);
   --surface: #ffffff;
   --surface-2: var(--sand-100);
@@ -97,7 +97,14 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
 }

@@ -7,13 +7,13 @@
  * carried through so the UI can label it honestly rather than implying the
  * hours were checked just now.
  */
-import generated from '@fixtures/places.generated.json';
-import { getConfig } from '@/lib/config';
-import { agencyDayOfWeek } from '@/lib/gtfs/time';
-import { GooglePlacesProvider } from './googlePlaces';
-import { OverpassProvider } from './overpass';
-import { parseOpeningHours } from './hours';
-import type { PlacesProvider, WaitPlace } from './types';
+import generated from "@fixtures/places.generated.json";
+import { getConfig } from "@/lib/config";
+import { agencyDayOfWeek } from "@/lib/gtfs/time";
+import { GooglePlacesProvider } from "./googlePlaces";
+import { OverpassProvider } from "./overpass";
+import { parseOpeningHours } from "./hours";
+import type { PlacesProvider, WaitPlace } from "./types";
 
 interface GeneratedFixture {
   generatedAt: string;
@@ -33,7 +33,12 @@ export function getFixturePlaces(nowMs: number): WaitPlace[] {
   const dow = agencyDayOfWeek(nowMs);
   return fixture.places.map((p) => ({
     ...p,
-    hours: parseOpeningHours(p.hours?.raw ?? null, dow, 'openstreetmap', Date.parse(fixture.generatedAt)),
+    hours: parseOpeningHours(
+      p.hours?.raw ?? null,
+      dow,
+      "openstreetmap",
+      Date.parse(fixture.generatedAt),
+    ),
   }));
 }
 
@@ -45,10 +50,17 @@ export const FIXTURE_METADATA = {
 
 export interface ResolvedPlacesProvider {
   name: string;
-  find: (args: { lat: number; lon: number; radiusMetres: number }) => Promise<WaitPlace[]>;
+  find: (args: {
+    lat: number;
+    lon: number;
+    radiusMetres: number;
+  }) => Promise<WaitPlace[]>;
 }
 
-export function resolvePlacesProvider(opts: { demo: boolean; nowMs: number }): ResolvedPlacesProvider {
+export function resolvePlacesProvider(opts: {
+  demo: boolean;
+  nowMs: number;
+}): ResolvedPlacesProvider {
   if (opts.demo) {
     return {
       name: `OpenStreetMap snapshot (demo fixture captured ${fixture.generatedAt.slice(0, 10)})`,
@@ -63,9 +75,9 @@ export function resolvePlacesProvider(opts: { demo: boolean; nowMs: number }): R
 
   return {
     name:
-      provider.name === 'google-places'
-        ? 'Google Places (New) Nearby Search'
-        : 'OpenStreetMap via Overpass API',
+      provider.name === "google-places"
+        ? "Google Places (New) Nearby Search"
+        : "OpenStreetMap via Overpass API",
     find: async (args) => {
       try {
         return await provider.search({ ...args, limit: 40 });

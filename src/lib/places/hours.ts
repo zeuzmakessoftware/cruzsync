@@ -11,7 +11,7 @@
  * Being wrong about closing time is how a rider ends up locked out in the dark
  * having missed their bus, so unknown must stay unknown.
  */
-import type { OpeningHours, PlaceSource, Tristate } from './types';
+import type { OpeningHours, PlaceSource, Tristate } from "./types";
 
 const DAY_INDEX: Record<string, number> = {
   su: 0,
@@ -26,7 +26,7 @@ const DAY_INDEX: Record<string, number> = {
 const DAY_TOKEN = /^(mo|tu|we|th|fr|sa|su)$/i;
 
 function expandDayRange(token: string): number[] | null {
-  const parts = token.split('-');
+  const parts = token.split("-");
   if (parts.length === 1) {
     const d = DAY_INDEX[parts[0].toLowerCase()];
     return d === undefined ? null : [d];
@@ -67,16 +67,25 @@ function parseExpression(expr: string): ParsedRule[] | null {
   if (!normalised) return null;
 
   // Constructs we explicitly refuse to guess at.
-  if (/ph|su?nrise|sunset|dawn|dusk|week|easter|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/.test(normalised)) {
+  if (
+    /ph|su?nrise|sunset|dawn|dusk|week|easter|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/.test(
+      normalised,
+    )
+  ) {
     // "24/7" is safe and common enough to special-case before bailing out.
-    if (normalised !== '24/7') return null;
+    if (normalised !== "24/7") return null;
   }
-  if (normalised === '24/7') {
-    return [{ days: [0, 1, 2, 3, 4, 5, 6], windows: [{ openMin: 0, closeMin: 24 * 60 }] }];
+  if (normalised === "24/7") {
+    return [
+      {
+        days: [0, 1, 2, 3, 4, 5, 6],
+        windows: [{ openMin: 0, closeMin: 24 * 60 }],
+      },
+    ];
   }
 
   const rules: ParsedRule[] = [];
-  for (const chunk of normalised.split(';')) {
+  for (const chunk of normalised.split(";")) {
     const rule = chunk.trim();
     if (!rule) continue;
 
@@ -86,30 +95,30 @@ function parseExpression(expr: string): ParsedRule[] | null {
     // Leading day specifiers, possibly comma separated: "mo-fr,su 09:00-17:00".
     while (i < tokens.length) {
       const t = tokens[i];
-      const candidates = t.split(',');
-      if (candidates.every((c) => DAY_TOKEN.test(c.split('-')[0]))) {
+      const candidates = t.split(",");
+      if (candidates.every((c) => DAY_TOKEN.test(c.split("-")[0]))) {
         dayTokens.push(...candidates);
         i++;
       } else break;
     }
 
-    const timePart = tokens.slice(i).join(' ').trim();
+    const timePart = tokens.slice(i).join(" ").trim();
     const days = dayTokens.length
       ? dayTokens.flatMap((t) => expandDayRange(t) ?? [])
       : [0, 1, 2, 3, 4, 5, 6];
     if (dayTokens.length && days.length === 0) return null;
 
-    if (timePart === 'off' || timePart === 'closed') {
+    if (timePart === "off" || timePart === "closed") {
       rules.push({ days, windows: [] });
       continue;
     }
     if (!timePart) return null;
 
     const windows: { openMin: number; closeMin: number }[] = [];
-    for (const span of timePart.split(',')) {
-      const [from, to] = span.trim().split('-');
-      const openMin = parseClock(from ?? '');
-      let closeMin = parseClock(to ?? '');
+    for (const span of timePart.split(",")) {
+      const [from, to] = span.trim().split("-");
+      const openMin = parseClock(from ?? "");
+      let closeMin = parseClock(to ?? "");
       if (openMin === null || closeMin === null) return null;
       // "18:00-02:00" wraps past midnight.
       if (closeMin <= openMin) closeMin += 24 * 60;
@@ -128,7 +137,13 @@ export function parseOpeningHours(
   fetchedAtMs: number,
 ): OpeningHours {
   if (!raw || !raw.trim()) {
-    return { raw: raw ?? null, parsed: false, todayWindows: [], source, fetchedAtMs };
+    return {
+      raw: raw ?? null,
+      parsed: false,
+      todayWindows: [],
+      source,
+      fetchedAtMs,
+    };
   }
   const rules = parseExpression(raw);
   if (!rules) {
@@ -165,28 +180,38 @@ export function isOpenThrough(
   nowMin: number,
   leaveByMin: number,
 ): Tristate {
-  if (!hours || !hours.parsed) return 'unknown';
+  if (!hours || !hours.parsed) return "unknown";
   if (hours.todayWindows.length === 0) return false;
-  return hours.todayWindows.some((w) => w.openMin <= nowMin && w.closeMin >= leaveByMin);
+  return hours.todayWindows.some(
+    (w) => w.openMin <= nowMin && w.closeMin >= leaveByMin,
+  );
 }
 
 /** Closing time for the window covering `nowMin`, as minutes after midnight. */
-export function closingTimeMinutes(hours: OpeningHours | null, nowMin: number): number | null {
+export function closingTimeMinutes(
+  hours: OpeningHours | null,
+  nowMin: number,
+): number | null {
   if (!hours || !hours.parsed) return null;
-  const w = hours.todayWindows.find((x) => x.openMin <= nowMin && x.closeMin > nowMin);
+  const w = hours.todayWindows.find(
+    (x) => x.openMin <= nowMin && x.closeMin > nowMin,
+  );
   return w ? w.closeMin : null;
 }
 
 /** Minutes after midnight in the agency timezone. */
-export function minutesOfDay(epochMs: number, timeZone = 'America/Los_Angeles'): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
+export function minutesOfDay(
+  epochMs: number,
+  timeZone = "America/Los_Angeles",
+): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
+    hour: "2-digit",
+    minute: "2-digit",
   }).formatToParts(new Date(epochMs));
-  const h = Number(parts.find((p) => p.type === 'hour')?.value) % 24;
-  const m = Number(parts.find((p) => p.type === 'minute')?.value);
+  const h = Number(parts.find((p) => p.type === "hour")?.value) % 24;
+  const m = Number(parts.find((p) => p.type === "minute")?.value);
   return h * 60 + m;
 }
 
@@ -195,7 +220,9 @@ export function formatMinutes(min: number): string {
   const m = min % (24 * 60);
   const h24 = Math.floor(m / 60);
   const mm = m % 60;
-  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  const ampm = h24 >= 12 ? "PM" : "AM";
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  return mm === 0 ? `${h12} ${ampm}` : `${h12}:${String(mm).padStart(2, '0')} ${ampm}`;
+  return mm === 0
+    ? `${h12} ${ampm}`
+    : `${h12}:${String(mm).padStart(2, "0")} ${ampm}`;
 }

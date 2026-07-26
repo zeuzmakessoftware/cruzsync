@@ -11,9 +11,14 @@
  * This is a heuristic, not a probability. We have no historical arrival outcomes
  * for Santa Cruz METRO, so nothing here is calibrated and the UI says so.
  */
-import { DEFAULTS, ENGINE_VERSION } from '@/lib/domain';
-import type { NormalisedAlert, NormalisedTripUpdate, NormalisedVehicle, RealtimeSnapshot } from '@/lib/rt/types';
-import type { EvidenceSignal, RouteEvidence } from './types';
+import { DEFAULTS, ENGINE_VERSION } from "@/lib/domain";
+import type {
+  NormalisedAlert,
+  NormalisedTripUpdate,
+  NormalisedVehicle,
+  RealtimeSnapshot,
+} from "@/lib/rt/types";
+import type { EvidenceSignal, RouteEvidence } from "./types";
 
 /** Weights are named so they can be shown in the UI and changed in one place. */
 export const EVIDENCE_WEIGHTS = {
@@ -30,23 +35,29 @@ export const EVIDENCE_WEIGHTS = {
 
 /** Effects that genuinely mean "you may not get this bus". */
 const SERVICE_REDUCING_EFFECTS = new Set([
-  'NO_SERVICE',
-  'REDUCED_SERVICE',
-  'SIGNIFICANT_DELAYS',
-  'DETOUR',
-  'STOP_MOVED',
+  "NO_SERVICE",
+  "REDUCED_SERVICE",
+  "SIGNIFICANT_DELAYS",
+  "DETOUR",
+  "STOP_MOVED",
 ]);
 
 export function isAlertActive(alert: NormalisedAlert, nowMs: number): boolean {
   if (alert.activePeriods.length === 0) return true;
   return alert.activePeriods.some(
-    (p) => (p.startMs === null || p.startMs <= nowMs) && (p.endMs === null || p.endMs >= nowMs),
+    (p) =>
+      (p.startMs === null || p.startMs <= nowMs) &&
+      (p.endMs === null || p.endMs >= nowMs),
   );
 }
 
 export function findRelevantAlerts(
   snapshot: RealtimeSnapshot,
-  { routeId, stopId, tripId }: { routeId: string; stopId?: string; tripId?: string },
+  {
+    routeId,
+    stopId,
+    tripId,
+  }: { routeId: string; stopId?: string; tripId?: string },
   nowMs: number,
 ): NormalisedAlert[] {
   return snapshot.alerts.filter((a) => {
@@ -58,16 +69,25 @@ export function findRelevantAlerts(
   });
 }
 
-function findVehicle(snapshot: RealtimeSnapshot, tripId: string): NormalisedVehicle | undefined {
+function findVehicle(
+  snapshot: RealtimeSnapshot,
+  tripId: string,
+): NormalisedVehicle | undefined {
   return snapshot.vehicles.find((v) => v.tripId === tripId);
 }
 
-function findTripUpdate(snapshot: RealtimeSnapshot, tripId: string): NormalisedTripUpdate | undefined {
+function findTripUpdate(
+  snapshot: RealtimeSnapshot,
+  tripId: string,
+): NormalisedTripUpdate | undefined {
   return snapshot.tripUpdates.find((t) => t.tripId === tripId);
 }
 
 /** Deviation in seconds for a specific stop, preferring the stop-level value. */
-function deviationForStop(tu: NormalisedTripUpdate | undefined, stopId: string): number | null {
+function deviationForStop(
+  tu: NormalisedTripUpdate | undefined,
+  stopId: string,
+): number | null {
   if (!tu) return null;
   const stu = tu.stopTimeUpdates.find((s) => s.stopId === stopId);
   if (stu) {
@@ -86,16 +106,19 @@ export interface AnalyseEvidenceInput {
   nowMs: number;
 }
 
-export function analyzeRouteEvidence(input: AnalyseEvidenceInput): RouteEvidence {
-  const { snapshot, routeId, tripId, stopId, scheduledDepartureMs, nowMs } = input;
+export function analyzeRouteEvidence(
+  input: AnalyseEvidenceInput,
+): RouteEvidence {
+  const { snapshot, routeId, tripId, stopId, scheduledDepartureMs, nowMs } =
+    input;
   const signals: EvidenceSignal[] = [];
   const caveats: string[] = [];
 
   signals.push({
-    key: 'static_schedule',
+    key: "static_schedule",
     detail: `Scheduled in GTFS for this service day.`,
     weight: EVIDENCE_WEIGHTS.scheduleBaseline,
-    source: 'static_schedule',
+    source: "static_schedule",
     observedAtMs: null,
   });
   let confidence: number = EVIDENCE_WEIGHTS.scheduleBaseline;
@@ -110,48 +133,58 @@ export function analyzeRouteEvidence(input: AnalyseEvidenceInput): RouteEvidence
 
   let sawUsableRealtime = false;
 
-  if (vehicle && vehicleAge !== null && vehicleAge <= DEFAULTS.staleAfterSeconds) {
+  if (
+    vehicle &&
+    vehicleAge !== null &&
+    vehicleAge <= DEFAULTS.staleAfterSeconds
+  ) {
     confidence += EVIDENCE_WEIGHTS.vehicleVisibleFresh;
     sawUsableRealtime = true;
     signals.push({
-      key: 'vehicle_visible_fresh',
-      detail: `Vehicle ${vehicle.vehicleId ?? '(unlabelled)'} position updated ${vehicleAge}s ago.`,
+      key: "vehicle_visible_fresh",
+      detail: `Vehicle ${vehicle.vehicleId ?? "(unlabelled)"} position updated ${vehicleAge}s ago.`,
       weight: EVIDENCE_WEIGHTS.vehicleVisibleFresh,
-      source: 'vehicle_positions',
+      source: "vehicle_positions",
       observedAtMs: vehicle.timestampMs,
     });
-  } else if (vehicle && vehicleAge !== null && vehicleAge <= DEFAULTS.hardStaleAfterSeconds) {
+  } else if (
+    vehicle &&
+    vehicleAge !== null &&
+    vehicleAge <= DEFAULTS.hardStaleAfterSeconds
+  ) {
     confidence += EVIDENCE_WEIGHTS.vehicleVisibleAging;
     sawUsableRealtime = true;
     signals.push({
-      key: 'vehicle_visible_aging',
+      key: "vehicle_visible_aging",
       detail: `Vehicle position is ${vehicleAge}s old — usable but no longer fresh.`,
       weight: EVIDENCE_WEIGHTS.vehicleVisibleAging,
-      source: 'vehicle_positions',
+      source: "vehicle_positions",
       observedAtMs: vehicle.timestampMs,
     });
-    caveats.push('The vehicle position for this trip is ageing; treat the timing as approximate.');
+    caveats.push(
+      "The vehicle position for this trip is ageing; treat the timing as approximate.",
+    );
   } else if (vehicle) {
     confidence += EVIDENCE_WEIGHTS.staleRealtimePenalty;
     signals.push({
-      key: 'vehicle_stale',
-      detail: `A vehicle is assigned but its last position is ${vehicleAge ?? '?'}s old.`,
+      key: "vehicle_stale",
+      detail: `A vehicle is assigned but its last position is ${vehicleAge ?? "?"}s old.`,
       weight: EVIDENCE_WEIGHTS.staleRealtimePenalty,
-      source: 'vehicle_positions',
+      source: "vehicle_positions",
       observedAtMs: vehicle.timestampMs,
     });
-    caveats.push('The assigned vehicle has stopped reporting recently.');
+    caveats.push("The assigned vehicle has stopped reporting recently.");
   } else {
     // Critical wording: absence of a position is NOT a cancellation.
     signals.push({
-      key: 'no_vehicle_position',
-      detail: 'No current vehicle position is visible for this trip.',
+      key: "no_vehicle_position",
+      detail: "No current vehicle position is visible for this trip.",
       weight: 0,
-      source: 'vehicle_positions',
+      source: "vehicle_positions",
       observedAtMs: null,
     });
     caveats.push(
-      'No current vehicle position is visible for this trip. That does not mean it is cancelled — it may not have been assigned a tracked bus yet, or the bus may not be reporting.',
+      "No current vehicle position is visible for this trip. That does not mean it is cancelled — it may not have been assigned a tracked bus yet, or the bus may not be reporting.",
     );
   }
 
@@ -159,56 +192,56 @@ export function analyzeRouteEvidence(input: AnalyseEvidenceInput): RouteEvidence
     confidence += EVIDENCE_WEIGHTS.tripUpdateFresh;
     sawUsableRealtime = true;
     signals.push({
-      key: 'trip_update_fresh',
+      key: "trip_update_fresh",
       detail: `Trip update received ${tuAge}s ago.`,
       weight: EVIDENCE_WEIGHTS.tripUpdateFresh,
-      source: 'trip_updates',
+      source: "trip_updates",
       observedAtMs: tripUpdate?.timestampMs ?? null,
     });
   } else if (tuAge !== null && tuAge <= DEFAULTS.hardStaleAfterSeconds) {
     confidence += EVIDENCE_WEIGHTS.tripUpdateAging;
     sawUsableRealtime = true;
     signals.push({
-      key: 'trip_update_aging',
+      key: "trip_update_aging",
       detail: `Trip update is ${tuAge}s old.`,
       weight: EVIDENCE_WEIGHTS.tripUpdateAging,
-      source: 'trip_updates',
+      source: "trip_updates",
       observedAtMs: tripUpdate?.timestampMs ?? null,
     });
   } else if (tuAge !== null) {
     confidence += EVIDENCE_WEIGHTS.staleRealtimePenalty;
     signals.push({
-      key: 'trip_update_stale',
+      key: "trip_update_stale",
       detail: `The most recent trip update is ${tuAge}s old, beyond the ${DEFAULTS.hardStaleAfterSeconds}s usable window.`,
       weight: EVIDENCE_WEIGHTS.staleRealtimePenalty,
-      source: 'trip_updates',
+      source: "trip_updates",
       observedAtMs: tripUpdate?.timestampMs ?? null,
     });
-    caveats.push('Real-time information for this trip has gone quiet.');
+    caveats.push("Real-time information for this trip has gone quiet.");
   }
 
   // The feed can state outright that a trip is cancelled. That is the ONE case
   // where CruzSync is entitled to say a bus is not coming, because the agency
   // said so. Silence is never treated this way.
   const cancelled =
-    tripUpdate?.scheduleRelationship === 'CANCELED' ||
+    tripUpdate?.scheduleRelationship === "CANCELED" ||
     tripUpdate?.stopTimeUpdates.some(
-      (s) => s.stopId === stopId && s.scheduleRelationship === 'SKIPPED',
+      (s) => s.stopId === stopId && s.scheduleRelationship === "SKIPPED",
     );
   if (cancelled) {
     confidence = 0;
     signals.push({
-      key: 'trip_cancelled',
+      key: "trip_cancelled",
       detail:
-        tripUpdate?.scheduleRelationship === 'CANCELED'
-          ? 'The agency feed reports this trip as cancelled.'
-          : 'The agency feed reports this stop as skipped on this trip.',
+        tripUpdate?.scheduleRelationship === "CANCELED"
+          ? "The agency feed reports this trip as cancelled."
+          : "The agency feed reports this stop as skipped on this trip.",
       weight: -1,
-      source: 'trip_updates',
+      source: "trip_updates",
       observedAtMs: tripUpdate?.timestampMs ?? null,
     });
     caveats.push(
-      'Santa Cruz METRO has published this trip as cancelled, so this is a reported cancellation rather than an inference.',
+      "Santa Cruz METRO has published this trip as cancelled, so this is a reported cancellation rather than an inference.",
     );
   }
 
@@ -216,23 +249,27 @@ export function analyzeRouteEvidence(input: AnalyseEvidenceInput): RouteEvidence
   if (deviationSec !== null && Math.abs(deviationSec) > 300) {
     confidence += EVIDENCE_WEIGHTS.largeDeviationPenalty;
     signals.push({
-      key: 'large_schedule_deviation',
-      detail: `Running ${Math.abs(Math.round(deviationSec / 60))} min ${deviationSec > 0 ? 'late' : 'early'}.`,
+      key: "large_schedule_deviation",
+      detail: `Running ${Math.abs(Math.round(deviationSec / 60))} min ${deviationSec > 0 ? "late" : "early"}.`,
       weight: EVIDENCE_WEIGHTS.largeDeviationPenalty,
-      source: 'trip_updates',
+      source: "trip_updates",
       observedAtMs: tripUpdate?.timestampMs ?? null,
     });
   } else if (deviationSec !== null && deviationSec !== 0) {
     signals.push({
-      key: 'schedule_deviation',
-      detail: `Running ${Math.abs(Math.round(deviationSec / 60))} min ${deviationSec > 0 ? 'late' : 'early'}.`,
+      key: "schedule_deviation",
+      detail: `Running ${Math.abs(Math.round(deviationSec / 60))} min ${deviationSec > 0 ? "late" : "early"}.`,
       weight: 0,
-      source: 'trip_updates',
+      source: "trip_updates",
       observedAtMs: tripUpdate?.timestampMs ?? null,
     });
   }
 
-  const alerts = findRelevantAlerts(snapshot, { routeId, stopId, tripId }, nowMs);
+  const alerts = findRelevantAlerts(
+    snapshot,
+    { routeId, stopId, tripId },
+    nowMs,
+  );
   for (const a of alerts) {
     const reducing = a.effect ? SERVICE_REDUCING_EFFECTS.has(a.effect) : false;
     const weight = reducing
@@ -241,15 +278,16 @@ export function analyzeRouteEvidence(input: AnalyseEvidenceInput): RouteEvidence
     confidence += weight;
     signals.push({
       key: `alert_${a.id}`,
-      detail: a.headerText ?? a.effect ?? 'Service alert in effect.',
+      detail: a.headerText ?? a.effect ?? "Service alert in effect.",
       weight,
-      source: 'service_alerts',
+      source: "service_alerts",
       observedAtMs: null,
     });
-    if (reducing) caveats.push(`Service alert in effect: ${a.headerText ?? a.effect}.`);
+    if (reducing)
+      caveats.push(`Service alert in effect: ${a.headerText ?? a.effect}.`);
   }
 
-  if (snapshot.freshness.label === 'expired') {
+  if (snapshot.freshness.label === "expired") {
     caveats.push(
       `The real-time feed itself is ${snapshot.freshness.ageSeconds}s old, so none of the above should be treated as current.`,
     );
@@ -257,16 +295,22 @@ export function analyzeRouteEvidence(input: AnalyseEvidenceInput): RouteEvidence
 
   confidence = Math.max(0, Math.min(1, confidence));
 
-  const serviceReducingAlert = alerts.some((a) => a.effect === 'NO_SERVICE') || Boolean(cancelled);
+  const serviceReducingAlert =
+    alerts.some((a) => a.effect === "NO_SERVICE") || Boolean(cancelled);
   const label = determineLabel({
     serviceReducingAlert,
-    vehicleFresh: Boolean(vehicle && vehicleAge !== null && vehicleAge <= DEFAULTS.staleAfterSeconds),
+    vehicleFresh: Boolean(
+      vehicle &&
+      vehicleAge !== null &&
+      vehicleAge <= DEFAULTS.staleAfterSeconds,
+    ),
     hasAnyRealtime: Boolean(vehicle || tripUpdate),
     sawUsableRealtime,
-    feedExpired: snapshot.freshness.label === 'expired',
+    feedExpired: snapshot.freshness.label === "expired",
   });
 
-  const predictedDepartureMs = scheduledDepartureMs + (deviationSec ?? 0) * 1000;
+  const predictedDepartureMs =
+    scheduledDepartureMs + (deviationSec ?? 0) * 1000;
   const spreadSec = uncertaintySpreadSeconds(label, confidence);
 
   return {
@@ -287,7 +331,11 @@ export function analyzeRouteEvidence(input: AnalyseEvidenceInput): RouteEvidence
     vehicleAgeSeconds: vehicleAge,
     tripUpdateAgeSeconds: tuAge,
     occupancyStatus: vehicle?.occupancyStatus ?? null,
-    activeAlerts: alerts.map((a) => ({ id: a.id, header: a.headerText, effect: a.effect })),
+    activeAlerts: alerts.map((a) => ({
+      id: a.id,
+      header: a.headerText,
+      effect: a.effect,
+    })),
     caveats,
   };
 }
@@ -298,13 +346,13 @@ function determineLabel(x: {
   hasAnyRealtime: boolean;
   sawUsableRealtime: boolean;
   feedExpired: boolean;
-}): RouteEvidence['label'] {
-  if (x.serviceReducingAlert) return 'blocked';
-  if (x.feedExpired) return 'stale';
-  if (x.vehicleFresh) return 'observed';
-  if (x.sawUsableRealtime) return 'reported';
-  if (x.hasAnyRealtime) return 'stale';
-  return 'scheduled-only';
+}): RouteEvidence["label"] {
+  if (x.serviceReducingAlert) return "blocked";
+  if (x.feedExpired) return "stale";
+  if (x.vehicleFresh) return "observed";
+  if (x.sawUsableRealtime) return "reported";
+  if (x.hasAnyRealtime) return "stale";
+  return "scheduled-only";
 }
 
 /**
@@ -312,11 +360,14 @@ function determineLabel(x: {
  * which downstream makes the safe-wait calculation more conservative rather than
  * more optimistic -- the direction that protects the rider.
  */
-export function uncertaintySpreadSeconds(label: RouteEvidence['label'], confidence: number): number {
+export function uncertaintySpreadSeconds(
+  label: RouteEvidence["label"],
+  confidence: number,
+): number {
   const base = {
     observed: 90,
     reported: 150,
-    'scheduled-only': 300,
+    "scheduled-only": 300,
     stale: 420,
     blocked: 600,
   }[label];
