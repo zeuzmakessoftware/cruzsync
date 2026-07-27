@@ -399,55 +399,19 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
         Skip to the recommendation
       </a>
 
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-          background: "var(--surface)",
-          borderBottom: "1px solid var(--border)",
-          padding: "0.7rem clamp(0.75rem,3vw,1.5rem)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1280,
-            margin: "0 auto",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ flex: "1 1 16rem", minWidth: 0 }}>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "1.35rem",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Cruz<span style={{ color: "var(--accent)" }}>Sync</span>
-            </h1>
-            <p
-              style={{
-                margin: 0,
-                fontSize: "0.82rem",
-                color: "var(--text-muted)",
-              }}
-            >
-              Know what to take. Know where to wait.
-            </p>
+      <header className="app-header">
+        <div className="header-inner">
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              CS
+            </span>
+            <div className="brand-copy">
+              <h1>CruzSync</h1>
+              <p>Santa Cruz commute intelligence</p>
+            </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "0.4rem",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
+          <div className="status-bar">
             <Chip
               tone={snap?.runtime.gemmaMode === "live-gemma" ? "good" : "demo"}
               title={snap?.runtime.modeReason}
@@ -474,14 +438,7 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                   ? `cached ${freshness?.ageSeconds}s ago`
                   : `live · ${freshness?.ageSeconds ?? "?"}s old`}
             </Chip>
-            <label
-              style={{
-                fontSize: "0.78rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.3rem",
-              }}
-            >
+            <label className="header-control">
               <input
                 type="checkbox"
                 checked={demo}
@@ -491,22 +448,15 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 }}
                 aria-label="Use the reproducible demo story instead of live Santa Cruz data"
               />
-              Demo story
+              Demo mode
             </label>
             <select
+              className="theme-select"
               value={theme}
               onChange={(e) =>
                 setTheme(e.target.value as "auto" | "light" | "dark")
               }
               aria-label="Colour theme"
-              style={{
-                fontSize: "0.78rem",
-                padding: "0.3rem",
-                borderRadius: 8,
-                background: "var(--surface)",
-                color: "var(--text)",
-                border: "1px solid var(--border)",
-              }}
             >
               <option value="auto">Auto theme</option>
               <option value="light">Light</option>
@@ -516,23 +466,12 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
         </div>
       </header>
 
-      <main
-        id="main"
-        style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-          padding: "clamp(0.75rem,3vw,1.5rem)",
-          display: "grid",
-          gap: "1rem",
-          gridTemplateColumns: "minmax(0,1fr)",
-        }}
-      >
+      <main id="main" className="app-main">
         {snapError && (
           <div
             role="alert"
-            className="card"
+            className="card notice"
             style={{
-              padding: "1rem",
               borderColor: "var(--danger-700)",
               color: "var(--danger-700)",
             }}
@@ -545,9 +484,8 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
         {snap?.snapshot.degradedReason && (
           <div
             role="status"
-            className="card"
+            className="card notice"
             style={{
-              padding: "0.75rem 1rem",
               borderColor: "var(--sunrise-300)",
               fontSize: "0.85rem",
             }}
@@ -558,15 +496,8 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
 
         {/* The story, in the creator's own words. */}
         {demo && scene && (
-          <section className="card" style={{ padding: "1rem 1.1rem" }}>
-            <div
-              style={{
-                display: "flex",
-                gap: "0.5rem",
-                flexWrap: "wrap",
-                marginBottom: "0.6rem",
-              }}
-            >
+          <section className="card scene-board">
+            <div className="scene-tabs" aria-label="Demo scenarios">
               {snap?.scenes.map((s) => (
                 <Button
                   key={s.id}
@@ -580,59 +511,25 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 </Button>
               ))}
             </div>
-            <blockquote
-              style={{
-                margin: 0,
-                paddingLeft: "0.9rem",
-                borderLeft: "4px solid var(--accent)",
-                fontSize: "1rem",
-                fontStyle: "italic",
-              }}
-            >
-              “{scene.narrative}”
-            </blockquote>
-            <p
-              className="tnum"
-              style={{
-                margin: "0.6rem 0 0",
-                fontSize: "0.8rem",
-                color: "var(--text-muted)",
-              }}
-            >
-              Demo clock: {clock(nowMs)} · Monday 20 July 2026 · every value
-              here is demonstration data.{" "}
-              <button
-                onClick={resetScene}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--accent)",
-                  cursor: "pointer",
-                  padding: 0,
-                  font: "inherit",
-                  textDecoration: "underline",
-                }}
-              >
-                Reset scene
-              </button>
-            </p>
+            <div className="scene-copy">
+              <p className="scene-kicker">Current rider scenario</p>
+              <blockquote className="scene-quote">
+                “{scene.narrative}”
+              </blockquote>
+              <p className="scene-meta tnum">
+                {clock(nowMs)} · Monday 20 July 2026 · demonstration data{" "}
+                <button className="text-button" onClick={resetScene}>
+                  Reset clock
+                </button>
+              </p>
+            </div>
           </section>
         )}
 
-        <div
-          style={{
-            display: "grid",
-            gap: "1rem",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(min(100%, 22rem), 1fr))",
-            alignItems: "start",
-          }}
-        >
+        <div className="workspace">
           {/* Map */}
-          <section
-            className="card"
-            style={{ overflow: "hidden", height: "clamp(18rem, 45vh, 26rem)" }}
-          >
+          <section className="map-shell">
+            <div className="map-label">35 → RiverFront → UCSC</div>
             <NetworkMap
               shapes={shapes}
               vehicles={vehicles}
@@ -648,8 +545,9 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
 
           {/* Ask */}
           <Card
-            title="What should I do?"
-            subtitle="Type or dictate. Speech is captured by your browser and sent as text — it is not Gemma audio input."
+            className="ask-panel"
+            title="Where are you headed?"
+            subtitle="Ask about the transfer, compare campus routes, or find somewhere safe to wait."
           >
             <form
               onSubmit={(e) => {
@@ -657,59 +555,27 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 void ask(input);
               }}
             >
-              <label
-                htmlFor="ask"
-                style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}
-              >
-                Your question
+              <label htmlFor="ask" className="field-label">
+                Trip question
               </label>
               <textarea
+                className="ask-textarea"
                 id="ask"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 rows={3}
                 placeholder={suggestions[0]}
-                style={{
-                  width: "100%",
-                  marginTop: "0.3rem",
-                  padding: "0.6rem",
-                  borderRadius: 10,
-                  border: "1px solid var(--border)",
-                  background: "var(--surface-2)",
-                  color: "var(--text)",
-                  font: "inherit",
-                  resize: "vertical",
-                }}
               />
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.4rem",
-                  flexWrap: "wrap",
-                  margin: "0.6rem 0",
-                }}
-              >
-                <label
-                  htmlFor="dest"
-                  style={{ fontSize: "0.8rem", alignSelf: "center" }}
-                >
+              <div className="destination-row">
+                <label htmlFor="dest" className="field-label">
                   Campus destination
                 </label>
                 <select
+                  className="select-input"
                   id="dest"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
-                  style={{
-                    padding: "0.4rem",
-                    borderRadius: 8,
-                    border: "1px solid var(--border)",
-                    background: "var(--surface)",
-                    color: "var(--text)",
-                    font: "inherit",
-                    fontSize: "0.82rem",
-                    maxWidth: "100%",
-                  }}
                 >
                   {CAMPUS_DESTINATIONS.map((d) => (
                     <option key={d.key} value={d.key}>
@@ -719,7 +585,7 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 </select>
               </div>
 
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <div className="ask-actions">
                 <Button
                   type="submit"
                   variant="primary"
@@ -737,32 +603,14 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
               </div>
             </form>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "0.35rem",
-                flexWrap: "wrap",
-                marginTop: "0.7rem",
-              }}
-            >
+            <div className="suggestion-list">
               {suggestions.map((s) => (
                 <button
+                  className="suggestion"
                   key={s}
                   onClick={() => {
                     setInput(s);
                     void ask(s);
-                  }}
-                  style={{
-                    fontSize: "0.75rem",
-                    padding: "0.3rem 0.6rem",
-                    borderRadius: 999,
-                    border: "1px dashed var(--border)",
-                    background: "transparent",
-                    color: "var(--text-muted)",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    font: "inherit",
-                    fontSizeAdjust: "none",
                   }}
                 >
                   {s}
@@ -901,13 +749,7 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
 
         <CivicDashboard events={events} onReport={recordGhostReport} />
 
-        <footer
-          style={{
-            fontSize: "0.72rem",
-            color: "var(--text-muted)",
-            padding: "0.5rem 0 2rem",
-          }}
-        >
+        <footer className="app-footer">
           <p style={{ margin: "0 0 0.35rem" }}>
             Transit data © Santa Cruz METRO (GTFS{" "}
             {snap?.gtfs.feedVersion ?? "—"}, valid {snap?.gtfs.validFrom} –{" "}

@@ -75,52 +75,24 @@ export function Card({
   children,
   action,
   id,
+  className,
 }: {
   title?: string;
   subtitle?: ReactNode;
   children: ReactNode;
   action?: ReactNode;
   id?: string;
+  className?: string;
 }) {
   return (
-    <section className="card rise" id={id} style={{ padding: "1rem 1.1rem" }}>
+    <section className={`card rise${className ? ` ${className}` : ""}`} id={id}>
       {(title || action) && (
-        <header
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "0.75rem",
-            marginBottom: subtitle ? "0.25rem" : "0.75rem",
-            flexWrap: "wrap",
-          }}
-        >
-          {title && (
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "0.95rem",
-                letterSpacing: "0.02em",
-                textTransform: "uppercase",
-              }}
-            >
-              {title}
-            </h2>
-          )}
+        <header className="card-header">
+          {title && <h2 className="card-title">{title}</h2>}
           {action}
         </header>
       )}
-      {subtitle && (
-        <p
-          style={{
-            margin: "0 0 0.85rem",
-            color: "var(--text-muted)",
-            fontSize: "0.85rem",
-          }}
-        >
-          {subtitle}
-        </p>
-      )}
+      {subtitle && <p className="card-subtitle">{subtitle}</p>}
       {children}
     </section>
   );
@@ -143,41 +115,6 @@ export function Button({
   type?: "button" | "submit";
   pressed?: boolean;
 }) {
-  const base = {
-    borderRadius: 10,
-    padding: "0.5rem 0.9rem",
-    fontSize: "0.85rem",
-    fontWeight: 600,
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.55 : 1,
-    transition: "background 0.15s, border-color 0.15s",
-    fontFamily: "inherit",
-    // Longhand only. Mixing the `border` shorthand with a `borderColor`
-    // override in the pressed state makes React warn and can drop styles.
-    borderWidth: 1,
-    borderStyle: "solid",
-  } as const;
-  const styles = {
-    primary: {
-      ...base,
-      background: "var(--accent)",
-      color: "var(--accent-contrast)",
-      borderColor: "var(--accent)",
-    },
-    secondary: {
-      ...base,
-      background: "var(--surface)",
-      color: "var(--text)",
-      borderColor: "var(--border)",
-    },
-    ghost: {
-      ...base,
-      background: "transparent",
-      color: "var(--text-muted)",
-      borderColor: "transparent",
-    },
-  }[variant];
-
   return (
     <button
       type={type}
@@ -185,16 +122,7 @@ export function Button({
       disabled={disabled}
       aria-label={ariaLabel}
       aria-pressed={pressed}
-      style={{
-        ...styles,
-        ...(pressed
-          ? {
-              background: "var(--accent)",
-              color: "var(--accent-contrast)",
-              borderColor: "var(--accent)",
-            }
-          : {}),
-      }}
+      className={`button button-${variant}${pressed ? " is-pressed" : ""}`}
     >
       {children}
     </button>
@@ -226,7 +154,7 @@ export function RouteBadge({
         minWidth: dim,
         height: dim,
         padding: "0 0.4rem",
-        borderRadius: 8,
+        borderRadius: 3,
         background: colors[routeId] ?? "var(--ink-500)",
         color: "#fff",
         fontWeight: 800,
