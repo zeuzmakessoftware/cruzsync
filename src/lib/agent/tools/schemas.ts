@@ -488,7 +488,7 @@ export const TOOL_DESCRIPTIONS: Record<ToolName, string> = {
   analyze_route_evidence:
     "Scores how much is actually known about one scheduled trip at one stop, returning the contributing signals.",
   compare_ucsc_options:
-    "Ranks Routes 11, 18 and 19 for the downtown-to-campus leg only. Route 35 is never a candidate here — it is the other leg of the journey.",
+    "Ranks Routes 11, 18 and 19 for the downtown-to-campus leg only. Route 35 is never a candidate here because it is the other leg of the journey.",
   get_nearby_wait_places:
     "Finds places near a boarding stop where the rider could usefully spend a wait, with feasibility already computed. Only feasible places should be recommended.",
   get_place_details:

@@ -124,7 +124,7 @@ export function summariseResult(tool: string, result: unknown): string {
     case "get_stop_schedule": {
       const deps = (r.departures as unknown as unknown[])?.length ?? 0;
       const hw = r.headway as unknown as { summary?: string } | null;
-      return `${deps} scheduled departure(s)${hw?.summary ? ` — ${hw.summary}` : ""}`;
+      return `${deps} scheduled departure(s)${hw?.summary ? `: ${hw.summary}` : ""}`;
     }
     case "compare_ucsc_options": {
       const best = r.bestRouteId as unknown as string | null;

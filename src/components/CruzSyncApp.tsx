@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { CAMPUS_DESTINATIONS, RIVERFRONT } from "@/lib/domain";
-import { Button, Card, Chip, Empty, Spinner } from "./ui";
+import { Button, Card, Spinner } from "./ui";
 import {
   CivicDashboard,
   JourneyTimeline,
@@ -102,7 +102,6 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   const [chosenRoute, setChosenRoute] = useState<string | null>(null);
   const [pickedPlace, setPickedPlace] = useState<string | null>(null);
   const [sessionEvents, setSessionEvents] = useState<CivicEvent[]>([]);
-  const [theme, setTheme] = useState<"auto" | "light" | "dark">("auto");
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [recheckedAt, setRecheckedAt] = useState<string | null>(null);
@@ -134,12 +133,6 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
     }, 1000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    if (theme === "auto")
-      document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
 
   const loadSnapshot = useCallback(
     async (resetClock: boolean) => {
@@ -305,7 +298,6 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
   }, [comparison]);
 
   const vehicles: NormalisedVehicle[] = snap?.snapshot.vehicles ?? [];
-  const freshness = snap?.snapshot.freshness;
   const origin = snap?.snapshot.origin;
   const isDemoData = origin === "fixture";
 
@@ -389,9 +381,20 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           "Which of the 11, 18 or 19 gets me to Science Hill soonest?",
         ]
       : [
-          "The next 35 is ages away — where can I hang out without missing it?",
+          "The next 35 is far away. Where can I wait without missing it?",
           "Somewhere quiet and indoors near the stop, please.",
         ];
+
+  const suggestionLabels =
+    direction === "to-campus"
+      ? ["Choose my bus", "Compare campus buses"]
+      : ["Find somewhere to wait", "Find somewhere quiet"];
+
+  const sceneLabels: Record<string, string> = {
+    "outbound-11-wins": "Choose a campus bus",
+    "outbound-11-ghost": "My bus did not arrive",
+    "return-long-wait": "Find a place to wait",
+  };
 
   return (
     <>
@@ -412,32 +415,6 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           </div>
 
           <div className="status-bar">
-            <Chip
-              tone={snap?.runtime.gemmaMode === "live-gemma" ? "good" : "demo"}
-              title={snap?.runtime.modeReason}
-            >
-              {snap?.runtime.gemmaMode === "live-gemma"
-                ? `Live Gemma · ${snap.runtime.gemmaModel}`
-                : "Deterministic Demo"}
-            </Chip>
-            <Chip
-              tone={
-                isDemoData
-                  ? "demo"
-                  : freshness?.label === "fresh"
-                    ? "good"
-                    : freshness?.label === "stale"
-                      ? "warn"
-                      : "bad"
-              }
-              title={snap?.snapshot.degradedReason}
-            >
-              {isDemoData
-                ? "demo fixture data"
-                : origin === "cache"
-                  ? `cached ${freshness?.ageSeconds}s ago`
-                  : `live · ${freshness?.ageSeconds ?? "?"}s old`}
-            </Chip>
             <label className="header-control">
               <input
                 type="checkbox"
@@ -448,20 +425,8 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 }}
                 aria-label="Use the reproducible demo story instead of live Santa Cruz data"
               />
-              Demo mode
+              Try demo trips
             </label>
-            <select
-              className="theme-select"
-              value={theme}
-              onChange={(e) =>
-                setTheme(e.target.value as "auto" | "light" | "dark")
-              }
-              aria-label="Colour theme"
-            >
-              <option value="auto">Auto theme</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
           </div>
         </div>
       </header>
@@ -494,10 +459,10 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           </div>
         )}
 
-        {/* The story, in the creator's own words. */}
         {demo && scene && (
-          <section className="card scene-board">
-            <div className="scene-tabs" aria-label="Demo scenarios">
+          <section className="demo-strip" aria-label="Example trips">
+            <strong>Try an example</strong>
+            <div className="scene-tabs">
               {snap?.scenes.map((s) => (
                 <Button
                   key={s.id}
@@ -507,22 +472,14 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                   }}
                   pressed={s.id === sceneId}
                 >
-                  {s.title}
+                  {sceneLabels[s.id] ?? s.title}
                 </Button>
               ))}
             </div>
-            <div className="scene-copy">
-              <p className="scene-kicker">Current rider scenario</p>
-              <blockquote className="scene-quote">
-                “{scene.narrative}”
-              </blockquote>
-              <p className="scene-meta tnum">
-                {clock(nowMs)} · Monday 20 July 2026 · demonstration data{" "}
-                <button className="text-button" onClick={resetScene}>
-                  Reset clock
-                </button>
-              </p>
-            </div>
+            <span className="demo-time tnum">Demo time {clock(nowMs)}</span>
+            <button className="text-button" onClick={resetScene}>
+              Restart
+            </button>
           </section>
         )}
 
@@ -544,32 +501,11 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           </section>
 
           {/* Ask */}
-          <Card
-            className="ask-panel"
-            title="Where are you headed?"
-            subtitle="Ask about the transfer, compare campus routes, or find somewhere safe to wait."
-          >
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void ask(input);
-              }}
-            >
-              <label htmlFor="ask" className="field-label">
-                Trip question
-              </label>
-              <textarea
-                className="ask-textarea"
-                id="ask"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                rows={3}
-                placeholder={suggestions[0]}
-              />
-
+          <Card className="ask-panel" title="What do you need?">
+            {direction === "to-campus" && (
               <div className="destination-row">
                 <label htmlFor="dest" className="field-label">
-                  Campus destination
+                  I am going to
                 </label>
                 <select
                   className="select-input"
@@ -579,44 +515,67 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 >
                   {CAMPUS_DESTINATIONS.map((d) => (
                     <option key={d.key} value={d.key}>
-                      {d.name} (Route {d.servedBy.join("/")})
+                      {d.name}
                     </option>
                   ))}
                 </select>
               </div>
+            )}
 
-              <div className="ask-actions">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={busy || !input.trim()}
-                >
-                  {busy ? "Thinking…" : "Ask CruzSync"}
-                </Button>
-                <Button
-                  onClick={startListening}
-                  disabled={listening}
-                  ariaLabel="Dictate your question"
-                >
-                  {listening ? "● Listening…" : "🎙 Speak"}
-                </Button>
-              </div>
-            </form>
-
-            <div className="suggestion-list">
-              {suggestions.map((s) => (
+            <div className="quick-actions">
+              {suggestions.map((suggestion, index) => (
                 <button
-                  className="suggestion"
-                  key={s}
+                  className="quick-action"
+                  key={suggestion}
+                  disabled={busy}
                   onClick={() => {
-                    setInput(s);
-                    void ask(s);
+                    setInput(suggestion);
+                    void ask(suggestion);
                   }}
                 >
-                  {s}
+                  {suggestionLabels[index]}
+                  <span aria-hidden="true">→</span>
                 </button>
               ))}
             </div>
+
+            <details className="ask-more">
+              <summary>Ask something else</summary>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void ask(input);
+                }}
+              >
+                <label htmlFor="ask" className="field-label">
+                  Your question
+                </label>
+                <input
+                  className="ask-textarea"
+                  id="ask"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type your question"
+                />
+
+                <div className="ask-actions">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={busy || !input.trim()}
+                  >
+                    {busy ? "Working..." : "Get my plan"}
+                  </Button>
+                  <Button
+                    onClick={startListening}
+                    disabled={listening}
+                    ariaLabel="Dictate your question"
+                  >
+                    {listening ? "Listening..." : "Use voice"}
+                  </Button>
+                </div>
+              </form>
+            </details>
 
             {transcript && (
               <p
@@ -629,7 +588,7 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
                 <strong>Transcript:</strong> “{transcript}”
               </p>
             )}
-            {busy && <Spinner label="Calling tools and composing an answer…" />}
+            {busy && <Spinner label="Finding the best plan..." />}
             {error && (
               <p
                 role="alert"
@@ -655,31 +614,6 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           />
         )}
 
-        {agent && (
-          <Card title="What CruzSync says">
-            <p
-              style={{ margin: 0, fontSize: "0.95rem", whiteSpace: "pre-wrap" }}
-            >
-              {agent.message}
-            </p>
-            <p
-              style={{
-                margin: "0.7rem 0 0",
-                fontSize: "0.72rem",
-                color: "var(--text-muted)",
-              }}
-            >
-              Explanation produced by{" "}
-              {agent.explanationMode === "live-gemma"
-                ? `${agent.model} (live)`
-                : agent.explanationMode === "deterministic-fallback"
-                  ? `the deterministic composer after ${agent.model} failed`
-                  : "the deterministic composer — no language model was called"}
-              . Engine v{agent.engineVersion}.
-            </p>
-          </Card>
-        )}
-
         {trip && trip.legs.length > 0 && (
           <JourneyTimeline
             legs={trip.legs}
@@ -688,14 +622,17 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
         )}
 
         {comparison && (
-          <RouteComparison
-            options={comparison.options}
-            bestRouteId={comparison.bestRouteId}
-            destinationName={comparison.destinationName}
-            undecidedReason={comparison.undecidedReason}
-            onSelect={setChosenRoute}
-            selected={chosenRoute}
-          />
+          <details className="more-details">
+            <summary>Compare the other buses</summary>
+            <RouteComparison
+              options={comparison.options}
+              bestRouteId={comparison.bestRouteId}
+              destinationName={comparison.destinationName}
+              undecidedReason={comparison.undecidedReason}
+              onSelect={setChosenRoute}
+              selected={chosenRoute}
+            />
+          </details>
         )}
 
         {placesResult && (
@@ -708,7 +645,7 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           />
         )}
 
-        {agent?.recommendation?.leaveByIso && (
+        {chosenAction && agent?.recommendation?.leaveByIso && (
           <NotificationPreviews
             leaveByIso={agent.recommendation.leaveByIso}
             nowMs={nowMs}
@@ -719,58 +656,40 @@ export default function CruzSyncApp({ shapes }: { shapes: MapShape[] }) {
           />
         )}
 
-        {(chosenAction || chosenRoute || pickedPlace) && (
-          <Card title="Monitoring">
-            <p style={{ margin: 0, fontSize: "0.9rem" }}>
-              {chosenRoute && <>You chose Route {chosenRoute}. </>}
-              {pickedPlace && <>You are waiting at a place. </>}
-              CruzSync will keep watching this journey and will re-check the bus
-              before each notification. Ask again at any time to force a fresh
-              evaluation.
-            </p>
-          </Card>
-        )}
-
         {agent && (
-          <ToolTrace
-            trace={agent.trace}
-            mode={agent.explanationMode}
-            model={agent.model}
-            fallbackReason={agent.fallbackReason}
-          />
+          <details className="more-details">
+            <summary>How this plan was checked</summary>
+            <ToolTrace
+              trace={agent.trace}
+              mode={agent.explanationMode}
+              model={agent.model}
+              fallbackReason={agent.fallbackReason}
+            />
+          </details>
         )}
 
-        {!agent && !busy && (
-          <Empty>
-            Ask a question above to see the recommendation, the 11/18/19
-            comparison, the evidence, and the full tool trace.
-          </Empty>
-        )}
-
-        <CivicDashboard events={events} onReport={recordGhostReport} />
+        <details className="more-details">
+          <summary>Report a bus that did not arrive</summary>
+          <CivicDashboard events={events} onReport={recordGhostReport} />
+        </details>
 
         <footer className="app-footer">
-          <p style={{ margin: "0 0 0.35rem" }}>
-            Transit data © Santa Cruz METRO (GTFS{" "}
-            {snap?.gtfs.feedVersion ?? "—"}, valid {snap?.gtfs.validFrom} –{" "}
-            {snap?.gtfs.validTo}). Place data ©{" "}
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              style={{ color: "var(--accent)" }}
-            >
-              OpenStreetMap
-            </a>{" "}
-            contributors (ODbL). Map tiles © OpenStreetMap.
-          </p>
-          <p style={{ margin: 0 }}>
-            CruzSync is an independent student project for the Cruz Into the
-            Gemmaverse hackathon. It is{" "}
-            <strong>
-              not affiliated with, endorsed by, or operated by Santa Cruz METRO
-            </strong>
-            , and it is rider decision support only — never an official source
-            of service information.
-          </p>
+          <p>Independent project. Not official Santa Cruz METRO information.</p>
+          <details className="footer-details">
+            <summary>Data sources</summary>
+            <p>
+              Transit data © Santa Cruz METRO (GTFS{" "}
+              {snap?.gtfs.feedVersion ?? "-"}, valid {snap?.gtfs.validFrom} -{" "}
+              {snap?.gtfs.validTo}). Place data ©{" "}
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                style={{ color: "var(--accent)" }}
+              >
+                OpenStreetMap
+              </a>{" "}
+              contributors (ODbL). Map tiles © OpenStreetMap.
+            </p>
+          </details>
         </footer>
       </main>
     </>

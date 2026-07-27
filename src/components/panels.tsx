@@ -22,7 +22,7 @@ const clock = (iso: string | null | undefined) =>
         hour: "numeric",
         minute: "2-digit",
       }).format(new Date(iso))
-    : "—";
+    : "-";
 
 const mins = (s: number) => `${Math.round(s / 60)} min`;
 
@@ -83,72 +83,26 @@ export function RecommendationCard({
 
   return (
     <section
-      className="card rise"
+      className="card rise recommendation"
       aria-labelledby="rec-heading"
-      style={{
-        padding: "1.25rem",
-        borderWidth: 2,
-        borderColor: uncertain ? "var(--danger-700)" : "var(--accent)",
-        background: "var(--surface)",
-      }}
+      data-uncertain={uncertain ? "true" : "false"}
     >
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          flexWrap: "wrap",
-          marginBottom: "0.6rem",
-        }}
-      >
-        <Chip tone={uncertain ? "bad" : "good"}>{rec.action}</Chip>
-        {isDemo && <Chip tone="demo">demo data</Chip>}
+      <div className="recommendation-label">
+        <span>{uncertain ? "Check before leaving" : "Your best option"}</span>
+        {isDemo && <span>Example trip</span>}
       </div>
 
-      <h2
-        id="rec-heading"
-        style={{
-          margin: "0 0 0.35rem",
-          fontSize: "clamp(1.3rem,4vw,1.9rem)",
-          lineHeight: 1.15,
-        }}
-      >
+      <h2 id="rec-heading" className="recommendation-title">
         {rec.headline}
       </h2>
-      <p
-        style={{
-          margin: "0 0 1rem",
-          color: "var(--text-muted)",
-          fontSize: "0.95rem",
-        }}
-      >
-        {rec.subhead}
-      </p>
+      <p className="recommendation-subhead">{rec.subhead}</p>
 
       {secondsLeft !== null && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: "0.6rem",
-            flexWrap: "wrap",
-            padding: "0.75rem 0.9rem",
-            borderRadius: 12,
-            background: "var(--surface-2)",
-            marginBottom: "0.9rem",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "0.75rem",
-              textTransform: "uppercase",
-              color: "var(--text-muted)",
-            }}
-          >
+        <div className="recommendation-time">
+          <span className="recommendation-time-label">
             {rec.leaveByIso ? "Leave by" : "Departs"}
           </span>
-          <strong className="tnum" style={{ fontSize: "1.6rem" }}>
-            {clock(target)}
-          </strong>
+          <strong className="tnum">{clock(target)}</strong>
           <span
             className="tnum"
             style={{
@@ -159,7 +113,7 @@ export function RecommendationCard({
             role="timer"
             aria-live="polite"
           >
-            {/* "16m 58s", not "16:58" — the latter reads as a clock time. */}
+            {/* "16m 58s", not "16:58". The latter reads as a clock time. */}
             {secondsLeft <= 0
               ? "now"
               : `in ${Math.floor(secondsLeft / 60)}m ${String(secondsLeft % 60).padStart(2, "0")}s`}
@@ -182,25 +136,24 @@ export function RecommendationCard({
         </ul>
       )}
 
-      <p style={{ margin: "0 0 1rem", fontSize: "0.85rem" }}>
-        <strong>Backup plan:</strong> {rec.backupPlan}
-      </p>
+      <details className="backup-plan">
+        <summary>If this bus does not come</summary>
+        <p>{rec.backupPlan}</p>
+      </details>
 
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+      <div className="recommendation-actions">
         <Button
           variant="primary"
           onClick={() => onChoose(rec.action)}
           pressed={chosen === rec.action}
         >
-          {chosen === rec.action
-            ? "✓ Monitoring this plan"
-            : "Take this option"}
+          {chosen === rec.action ? "Plan saved" : "Use this plan"}
         </Button>
         <Button
           onClick={() => onChoose("WAIT AT STOP")}
           pressed={chosen === "WAIT AT STOP"}
         >
-          Stay at the stop
+          Wait here
         </Button>
       </div>
 
@@ -212,8 +165,7 @@ export function RecommendationCard({
             color: "var(--text-muted)",
           }}
         >
-          This advice expires at {clock(rec.reevaluateAtIso)} — CruzSync will
-          re-check the bus before then.
+          We will check again before {clock(rec.reevaluateAtIso)}.
         </p>
       )}
     </section>
@@ -343,7 +295,7 @@ export function RouteComparison({
                         {o.arrivalRange && (
                           <>
                             {" "}
-                            · arrives {clock(o.arrivalRange[0])}–
+                            , arrives {clock(o.arrivalRange[0])} to
                             {clock(o.arrivalRange[1])}
                           </>
                         )}
@@ -610,7 +562,7 @@ export function ToolTrace({
 }) {
   return (
     <Card
-      title="How Gemma reasoned"
+      title="How this plan was checked"
       subtitle="Sanitised tool calls and their sources. No private chain-of-thought is requested, stored, or shown."
       action={
         <Chip
@@ -625,7 +577,7 @@ export function ToolTrace({
           {mode === "live-gemma"
             ? `live ${model}`
             : mode === "deterministic-fallback"
-              ? "Gemma failed — deterministic fallback"
+              ? "Gemma failed, deterministic fallback"
               : "deterministic demo"}
         </Chip>
       }
@@ -710,7 +662,7 @@ export function ToolTrace({
                       color: "var(--text-muted)",
                     }}
                   >
-                    {t.source ?? "—"}
+                    {t.source ?? "-"}
                     {t.origin && (
                       <>
                         {" "}
@@ -911,9 +863,7 @@ export function WaitPanel({
                   onClick={() => onPick(p.id)}
                   pressed={isPicked}
                 >
-                  {isPicked
-                    ? "✓ Waiting here — monitoring the bus"
-                    : "Wait here"}
+                  {isPicked ? "Waiting here, monitoring the bus" : "Wait here"}
                 </Button>
               </li>
             );
@@ -931,7 +881,7 @@ export function WaitPanel({
             }}
           >
             {rejected.length} nearby place{rejected.length === 1 ? "" : "s"}{" "}
-            ruled out — and why
+            ruled out and why
           </summary>
           <ul
             style={{
@@ -943,7 +893,7 @@ export function WaitPanel({
           >
             {rejected.slice(0, 10).map((p) => (
               <li key={p.id} style={{ marginBottom: "0.25rem" }}>
-                <strong>{p.name}</strong> —{" "}
+                <strong>{p.name}</strong>:{" "}
                 {p.blockedReasons[0] ??
                   p.reasons.find((r) => r.includes("cannot confirm")) ??
                   "not feasible"}
@@ -1077,7 +1027,7 @@ export function CivicDashboard({
     acc[e.kind] = (acc[e.kind] ?? 0) + 1;
     return acc;
   }, {});
-  const minutesLost = events.length * 22; // modelled, not measured — labelled below
+  const minutesLost = events.length * 22; // Modelled, not measured; labelled below.
 
   return (
     <Card
@@ -1138,7 +1088,7 @@ export function CivicDashboard({
                   {clock(e.expectedIso)}
                 </span>
                 <span style={{ flex: "1 1 10rem", minWidth: 0 }}>
-                  {e.stopLabel} — {e.note}
+                  {e.stopLabel}: {e.note}
                 </span>
                 <Chip tone={e.isFixture ? "demo" : "good"}>
                   {e.isFixture ? "fixture" : "this session"}

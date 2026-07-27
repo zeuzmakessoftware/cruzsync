@@ -156,7 +156,7 @@ export function analyzeRouteEvidence(
     sawUsableRealtime = true;
     signals.push({
       key: "vehicle_visible_aging",
-      detail: `Vehicle position is ${vehicleAge}s old — usable but no longer fresh.`,
+      detail: `Vehicle position is ${vehicleAge}s old, so it is usable but no longer fresh.`,
       weight: EVIDENCE_WEIGHTS.vehicleVisibleAging,
       source: "vehicle_positions",
       observedAtMs: vehicle.timestampMs,
@@ -184,7 +184,7 @@ export function analyzeRouteEvidence(
       observedAtMs: null,
     });
     caveats.push(
-      "No current vehicle position is visible for this trip. That does not mean it is cancelled — it may not have been assigned a tracked bus yet, or the bus may not be reporting.",
+      "No current vehicle position is visible for this trip. This is not evidence of a cancellation. The bus may not have a tracker, or it may not be reporting.",
     );
   }
 

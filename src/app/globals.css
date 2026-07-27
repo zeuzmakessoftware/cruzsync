@@ -186,9 +186,8 @@ a {
 .brand-copy h1 {
   margin: 0;
   color: #fff8ec;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: 1.52rem;
-  font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 750;
   line-height: 1;
   letter-spacing: -0.035em;
 }
@@ -227,16 +226,6 @@ a {
   accent-color: var(--accent);
 }
 
-.theme-select {
-  min-height: 34px;
-  padding: 0 28px 0 10px;
-  color: #e8eee9;
-  background: #1a3732;
-  border: 1px solid #49635d;
-  border-radius: 3px;
-  font-size: 0.75rem;
-}
-
 .app-main {
   max-width: 1440px;
   margin: 0 auto;
@@ -249,7 +238,7 @@ a {
 .app-main > *,
 .card,
 .workspace,
-.scene-board {
+.demo-strip {
   min-width: 0;
   width: 100%;
 }
@@ -259,80 +248,51 @@ a {
   border-left: 4px solid var(--accent);
 }
 
-.scene-board {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 2.1fr);
-  min-height: 190px;
-  overflow: hidden;
-  padding: 0 !important;
-  background: var(--pacific-950) !important;
-  color: #eef2ea;
-  border: 0 !important;
-  box-shadow: var(--shadow);
+.demo-strip {
+  min-height: 58px;
+  padding: 8px 12px 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  font-size: 0.78rem;
 }
 
 .scene-tabs {
-  padding: 24px;
-  display: grid;
-  align-content: start;
-  gap: 1px;
-  border-right: 1px solid #3c554f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .scene-tabs .button {
-  width: 100%;
-  justify-content: flex-start;
-  text-align: left;
-  color: #b8c9c2;
-  background: transparent;
-  border-color: transparent;
-  border-bottom-color: #36504a;
-  padding: 12px 0;
+  min-height: 34px;
+  padding: 5px 10px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border-color: var(--border);
 }
 
 .scene-tabs .button:hover,
 .scene-tabs .button.is-pressed {
-  color: #fff9ef;
-  background: transparent;
-  border-bottom-color: var(--accent);
-  transform: translateX(4px);
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: none;
 }
 
-.scene-copy {
-  position: relative;
-  padding: 28px clamp(24px, 4vw, 54px);
-  display: grid;
-  align-content: center;
-}
-
-.scene-kicker {
-  margin: 0 0 14px;
-  color: var(--sunrise-300);
-  font-size: 0.69rem;
-  font-weight: 750;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.scene-quote {
-  max-width: 950px;
-  margin: 0;
-  color: #fff8ec;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(1.25rem, 2.2vw, 2rem);
-  line-height: 1.25;
-  letter-spacing: -0.025em;
-}
-
-.scene-meta {
-  margin: 18px 0 0;
-  color: #a9bbb5;
-  font-size: 0.75rem;
+.demo-time {
+  margin-left: auto;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .text-button {
   padding: 0;
-  color: #ffd2c6;
+  color: var(--accent);
   background: none;
   border: 0;
   border-bottom: 1px solid currentColor;
@@ -379,10 +339,8 @@ a {
 }
 
 .ask-panel .card-title {
-  max-width: 10ch;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(1.85rem, 3vw, 2.7rem);
-  line-height: 1;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  line-height: 1.1;
 }
 
 .ask-panel .card-subtitle {
@@ -409,12 +367,9 @@ a {
 }
 
 .ask-textarea {
-  min-height: 118px;
-  padding: 13px 0;
-  resize: vertical;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: 1.12rem;
-  line-height: 1.45;
+  min-height: 48px;
+  padding: 11px 0;
+  font-size: 1rem;
 }
 
 .ask-textarea::placeholder {
@@ -432,33 +387,72 @@ a {
   font-size: 0.84rem;
 }
 
-.ask-actions,
-.suggestion-list {
+.ask-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.suggestion-list {
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
+.quick-actions {
+  display: grid;
+  gap: 10px;
 }
 
-.suggestion {
-  padding: 0 0 3px;
-  color: var(--text-muted);
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid transparent;
+.quick-action {
+  min-height: 58px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 750;
   text-align: left;
 }
 
-.suggestion:hover {
-  color: var(--text);
-  border-bottom-color: var(--accent);
+.quick-action:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.quick-action:active:not(:disabled),
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.quick-action:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.quick-action span {
+  color: var(--accent);
+  font-size: 1.3rem;
+}
+
+.ask-more {
+  margin-top: 18px;
+}
+
+.ask-more > summary,
+.more-details > summary,
+.backup-plan > summary,
+.footer-details > summary {
+  width: fit-content;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.ask-more form {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 .card {
@@ -479,11 +473,101 @@ a {
 
 .card-title {
   margin: 0;
-  font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  font-size: clamp(1.25rem, 2vw, 1.7rem);
-  font-weight: 600;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  font-weight: 750;
   line-height: 1.15;
-  letter-spacing: -0.025em;
+}
+
+.recommendation {
+  padding: clamp(24px, 4vw, 44px);
+  border: 2px solid var(--accent);
+}
+
+.recommendation[data-uncertain="true"] {
+  border-color: var(--danger-700);
+}
+
+.recommendation-label {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.recommendation-title {
+  max-width: 24ch;
+  margin: 0 0 8px;
+  font-size: clamp(1.55rem, 4vw, 2.45rem);
+  line-height: 1.12;
+}
+
+.recommendation-subhead {
+  margin: 0 0 22px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.recommendation-time {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--surface-2);
+  border-radius: 3px;
+}
+
+.recommendation-time-label {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.recommendation-time strong {
+  font-size: 1.65rem;
+}
+
+.backup-plan {
+  margin-bottom: 20px;
+}
+
+.backup-plan p {
+  max-width: 65ch;
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.recommendation-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.more-details {
+  min-width: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.more-details > summary {
+  padding: 6px 0;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.more-details[open] > summary {
+  margin-bottom: 12px;
+}
+
+.more-details > .card {
+  border: 0;
+  padding: 18px 0;
+  background: transparent;
 }
 
 .card-subtitle {
@@ -617,6 +701,19 @@ a {
   font-size: 0.7rem;
 }
 
+.app-footer p {
+  margin: 0;
+}
+
+.footer-details {
+  margin-top: 5px;
+}
+
+.footer-details p {
+  max-width: 90ch;
+  margin-top: 7px;
+}
+
 @media (max-width: 860px) {
   .header-inner {
     padding: 10px 18px;
@@ -635,29 +732,26 @@ a {
     display: none;
   }
 
-  .scene-board,
   .workspace {
     grid-template-columns: 1fr;
   }
 
+  .demo-strip {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
   .scene-tabs {
-    padding: 12px 16px;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(170px, 1fr);
-    overflow-x: auto;
-    border-right: 0;
-    border-bottom: 1px solid #3c554f;
+    width: 100%;
+    order: 3;
   }
 
   .scene-tabs .button {
-    padding: 8px 10px;
-    border: 0;
-    border-left: 2px solid transparent;
+    flex: 1 1 160px;
   }
 
-  .scene-tabs .button.is-pressed {
-    border-left-color: var(--accent);
-    transform: none;
+  .ask-panel {
+    order: -1;
   }
 
   .map-shell {
@@ -695,21 +789,9 @@ a {
     padding: 0 8px;
   }
 
-  .theme-select {
-    display: none;
-  }
-
   .app-main {
     padding: 18px 12px 38px;
     gap: 12px;
-  }
-
-  .scene-copy {
-    padding: 24px 20px;
-  }
-
-  .scene-quote {
-    font-size: 1.22rem;
   }
 
   .workspace {

@@ -121,7 +121,7 @@ export default function NetworkMap({
             }}
           >
             <Tooltip sticky>
-              Route {s.routeId} — {meta?.longName ?? ""}
+              Route {s.routeId}: {meta?.longName ?? ""}
             </Tooltip>
           </Polyline>
         );

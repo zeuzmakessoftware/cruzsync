@@ -92,9 +92,8 @@ describe("route evidence scoring", () => {
       .join(" ")
       .toLowerCase();
     expect(text).toContain("no current vehicle position is visible");
-    // The word "cancelled" may appear, but only inside an explicit denial.
-    expect(text).toContain("does not mean it is cancelled");
-    expect(text).not.toMatch(/\bis cancelled\b(?! —)/);
+    expect(text).toContain("not evidence of a cancellation");
+    expect(text).not.toMatch(/\bis cancelled\b/);
     expect(text).not.toContain("not running");
     expect(ev.label).toBe("scheduled-only");
   });

@@ -196,7 +196,7 @@ export function rankWaitPlaces(input: RankInput): WaitCandidate[] {
     const enoughUsableTime = safe.hasUsefulTime;
     if (!enoughUsableTime) {
       blockedReasons.push(
-        `Only ${Math.round(safe.usableWaitSeconds / 60)} usable minutes after walking back — not enough to be worth it.`,
+        `Only ${Math.round(safe.usableWaitSeconds / 60)} usable minutes after walking back, which is not enough to be worth it.`,
       );
     }
 
@@ -215,7 +215,7 @@ export function rankWaitPlaces(input: RankInput): WaitCandidate[] {
     reasons.push(`${Math.round(safe.usableWaitSeconds / 60)} usable minutes.`);
     if (place.sponsored) {
       reasons.push(
-        "Sponsored listing — this does not affect whether it is feasible or how it ranks.",
+        "Sponsored listing. This does not affect whether it is feasible or how it ranks.",
       );
     }
 
